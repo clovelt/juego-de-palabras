@@ -58,6 +58,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Mostrar barra de búsqueda si hay ?cheat en la URL
     const urlParams = new URLSearchParams(window.location.search);
+    const apiBaseUrl = (urlParams.get('api') || '').replace(/\/$/, '');
     
     const isCheat = urlParams.has('cheat');
 
@@ -83,7 +84,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         messageElement.textContent = '';
 
         try {
-            const response = await fetch(`/api/rae/search/${word}`);
+            const response = await fetch(`${apiBaseUrl}/api/rae/search/${encodeURIComponent(word)}`);
             if (!response.ok) {
                 throw new Error(`Error ${response.status}: ${response.statusText}`);
             }

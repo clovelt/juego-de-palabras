@@ -17,6 +17,19 @@ npm install
 npm run dev
 ```
 
+Para probar solo el frontend local usando la API ya desplegada en Cloudflare:
+
+```bash
+cd public
+python3 -m http.server 8000
+```
+
+Abre:
+
+```text
+http://localhost:8000?api=https://juego-de-palabras.pages.dev
+```
+
 ## Deploy en Cloudflare Pages
 
 Configura el proyecto con:
