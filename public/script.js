@@ -67,19 +67,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     const excludeWords = ['singular', 'ante', 'prnl', 'der', 'méx', 'hond', 'ant', 'ant', 'fís', 'esc', 'desus', 'sin', 'ec', 'coloq', 'etc', 'debida', 'antambién', 'hipervínculo'];  // Reemplaza con las palabras que deseas excluir
     const customDefinitions = {
         roquekes: {
-            definitions: [
-                'Autor, artista o criatura jugable pendiente de definición definitiva. Sin.: placeholder, coautor, nombre propio.',
-                'Persona que aparece en los créditos y merece una acepción mejor escrita. Sin.: pendiente, firma, cómplice.'
-            ],
+            definitions: {
+                es: [
+                    'Autor, artista o criatura jugable pendiente de definición definitiva. Sin.: placeholder, coautor, nombre propio.',
+                    'Persona que aparece en los créditos y merece una acepción mejor escrita. Sin.: pendiente, firma, cómplice.'
+                ],
+                en: [
+                    'Author, artist, or playable creature awaiting a definitive definition. Syn.: placeholder, coauthor, proper noun.',
+                    'Person appearing in the credits who deserves a better-written entry. Syn.: pending, signature, accomplice.'
+                ]
+            },
             actions: [
                 { label: 'Instagram', url: 'https://www.instagram.com/roquekes?igsh=Z3UwODg0YjZvNGhr' }
             ]
         },
         clovelt: {
-            definitions: [
-                'Autor, código o entidad colaboradora pendiente de definición definitiva. Sin.: placeholder, coautor, nombre propio.',
-                'Persona que aparece en los créditos y necesita una acepción menos improvisada. Sin.: pendiente, firma, cómplice.'
-            ],
+            definitions: {
+                es: [
+                    'Autor, código o entidad colaboradora pendiente de definición definitiva. Sin.: placeholder, coautor, nombre propio.',
+                    'Persona que aparece en los créditos y necesita una acepción menos improvisada. Sin.: pendiente, firma, cómplice.'
+                ],
+                en: [
+                    'Author, code, or collaborating entity awaiting a definitive definition. Syn.: placeholder, coauthor, proper noun.',
+                    'Person appearing in the credits who needs a less improvised entry. Syn.: pending, signature, accomplice.'
+                ]
+            },
             actions: [
                 { label: 'X / Twitter', url: 'https://x.com/clovelt' }
             ]
@@ -96,8 +108,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const isCheat = urlParams.has('cheat');
 
     if (isCheat) {
-        document.title += " (pero eres un tramposo)";
-        nameDiv.textContent += " (pero eres un tramposo)";
+        const cheatSuffix = document.createElement('span');
+        cheatSuffix.id = 'cheatSuffix';
+        nameDiv.appendChild(cheatSuffix);
     }
 
     // Función para reproducir sonidos
@@ -113,6 +126,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const copy = {
         es: {
+            pageTitle: 'De mal en peor',
+            cheatSuffix: ' (pero eres un tramposo)',
             titleWordOne: 'Juego',
             titleConnector: 'de',
             titleWordTwo: 'Palabras',
@@ -126,8 +141,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             start: 'Jugar',
             searchPlaceholder: 'Escribe una palabra',
             search: 'Buscar definición',
+            loading: 'Cargando definiciones...',
+            noDefinitions: 'No hay definiciones.',
+            error: 'Algo ha fallado',
+            emptySearch: 'Escribe una palabra',
+            counter: 'Def.',
+            searched: 'Definiciones buscadas:',
+            giveUp: 'Rendirse',
+            easy: 'Modo fácil (no hay vuelta atrás)',
+            restart: 'Volver a "mal"',
+            giveUpWord: 'Dignidad',
+            easyWord: 'Meritocracia',
         },
         en: {
+            pageTitle: 'From bad to worse',
+            cheatSuffix: ' (but you are a cheater)',
             titleWordOne: 'Game',
             titleConnector: 'of',
             titleWordTwo: 'Words',
@@ -141,12 +169,25 @@ document.addEventListener('DOMContentLoaded', async () => {
             start: 'Play',
             searchPlaceholder: 'Type a word',
             search: 'Search definition',
+            loading: 'Loading definitions...',
+            noDefinitions: 'No definitions found.',
+            error: 'Something went wrong',
+            emptySearch: 'Type a word',
+            counter: 'Def.',
+            searched: 'Definitions searched:',
+            giveUp: 'Give up',
+            easy: 'Easy mode (no going back)',
+            restart: 'Back to "bad"',
+            giveUpWord: 'dignity',
+            easyWord: 'meritocracy',
         }
     };
 
     const applyLanguage = () => {
         const text = copy[language];
+        const cheatSuffix = document.getElementById('cheatSuffix');
         document.documentElement.lang = language;
+        document.title = text.pageTitle + (isCheat ? text.cheatSuffix : '');
         titleWordOne.textContent = text.titleWordOne;
         titleConnector.textContent = text.titleConnector;
         titleWordTwo.textContent = text.titleWordTwo;
@@ -160,6 +201,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         startBtn.textContent = text.start;
         wordInput.placeholder = text.searchPlaceholder;
         getDefinitionBtn.textContent = text.search;
+        loadingMessage.textContent = text.loading;
+        giveUpBtn.textContent = text.giveUp;
+        easyBtn.textContent = text.easy;
+        restartBtn.textContent = text.restart;
+        if (cheatSuffix) {
+            cheatSuffix.textContent = text.cheatSuffix;
+        }
     };
 
     const updateLanguageButton = () => {
@@ -171,6 +219,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             ? (language === 'es' ? 'Ruido' : 'Noise')
             : (language === 'es' ? 'Silencio' : 'Silence');
     };
+
+    const t = (key) => copy[language][key];
 
     applyLanguage();
     updateLanguageButton();
@@ -185,11 +235,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         try {
             const localEntry = customDefinitions[word.toLowerCase()];
-            const data = localEntry || await fetchDictionaryDefinitions(word);
+            const data = localEntry
+                ? { definitions: localEntry.definitions[language], actions: localEntry.actions }
+                : await fetchDictionaryDefinitions(word);
             loadingMessage.style.display = 'none';
 
             if (data.definitions.length === 0) {
-                responseOutput.textContent = 'No hay definiciones.';
+                responseOutput.textContent = t('noDefinitions');
                 return;
             }
 
@@ -217,7 +269,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         } catch (error) {
             loadingMessage.style.display = 'none';
-            responseOutput.textContent = `Algo ha fallado: ${error.message}`;
+            responseOutput.textContent = `${t('error')}: ${error.message}`;
         }
     };
 
@@ -262,7 +314,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const clickedWord = link.textContent.toLowerCase();
                 giveUpBtn.disabled = true;
                 clickCount++;
-                clicks.innerHTML = 'Def. ' + (clickCount+1);
+                clicks.innerHTML = t('counter') + ' ' + (clickCount+1);
                 if (clickCount > 7 && sinceGivenUp === 99999) {
                     giveUpBtn.style.display = 'inline';
                 }
@@ -279,73 +331,48 @@ document.addEventListener('DOMContentLoaded', async () => {
     const ending = (message, sound, wordToFetch) => {
         makeLinks = false;
         fetchDefinitions(wordToFetch);
-        messageElement.innerHTML = '<p style="font-size:1.3em;">' + message + ' <br> <strong>Definiciones buscadas: ' + clickCount + '</strong> </p>';
+        messageElement.innerHTML = '<p style="font-size:1.3em;">' + message + ' <br> <strong>' + t('searched') + ' ' + clickCount + '</strong> </p>';
         restartBtn.style.display = 'inline';
         playSound(sound);
     };
+
+    const endings = {
+        es: {
+            peor: { message: '<br>¿Has llegado al final? A lo mejor sí, a lo mejor no.', sound: [,,662,.82,.11,.33,1,0,,-0.2,,,,1.2,,.26,.01] },
+            mejor: { message: '<br>De mejor a peor, y de arriba a...', sound: [,,80,.3,.4,.7,2,.1,-0.73,3.42,-430,.09,.17,,,,.19] },
+            abajo: { message: '<br>...al centro y...', sound: [,.5,847,.02,.3,.9,1,1.67,,,-294,.04,.13,,,,.1] },
+            adentro: { word: 'despiste', message: '<br>(esto es una distracción)', sound: [,,172,.8,,.8,1,.76,7.7,3.73,-482,.08,.15,,.14] },
+            despiste: { message: '<br>Si aquí te sales del asfalto, es que te gusta estar con Ducir.', sound: [,0,960,,1,.01,,.8,-0.01,,-190,.5,,.05,,,1] },
+            conducir: { message: '<br>Ahora pareces enterarte, pero todavía no estás encima del bordillo.', sound: [1.5,0,250,.02,.02,.2,2,2,,,,,.02,,,.02,.01,,,.1] },
+            sobresaliente: { message: '<br>Queda poco. Esta es la primera de todas.', sound: [,,20,.04,,.6,,1.31,,,-990,.06,.17,,,.04,.07] },
+            malo: { message: '<br>Estás casi. El hombre que lo vendió no lo quería. El hombre que lo compró no lo necesitaba. El hombre que lo usó no lo conocía.', sound: [,.2,40,.5,,1.5,,11,,,,,,199] },
+            'ataúd': { message: '<br>Has llegado. El final estaba, desde el principio, en tu corazón.', sound: [,.3,1975,.08,.56,.02,,,-0.4,,-322,.56,.41,,,,.25] },
+            'corazón': { word: 'Ganador', message: '<br>Gracias por tener una obsesión ridícula o ser tan tramposo como para mirar el código. Regalo aquí unas claves, coge una y deja para el resto: <br>' + codes, sound: [,,471,,.09,.47,4,1.06,-6.7,,,,,.9,61,.1,,.82,.09,.13] },
+        },
+        en: {
+            worse: { message: '<br>Have you reached the end? Maybe yes, maybe no.', sound: [,,662,.82,.11,.33,1,0,,-0.2,,,,1.2,,.26,.01] },
+            better: { message: '<br>From better to worse, and from up to...', sound: [,,80,.3,.4,.7,2,.1,-0.73,3.42,-430,.09,.17,,,,.19] },
+            down: { message: '<br>...the center and...', sound: [,.5,847,.02,.3,.9,1,1.67,,,-294,.04,.13,,,,.1] },
+            inside: { word: 'distraction', message: '<br>(this is a distraction)', sound: [,,172,.8,,.8,1,.76,7.7,3.73,-482,.08,.15,,.14] },
+            distraction: { message: '<br>If you leave the road here, you clearly enjoy being misled.', sound: [,0,960,,1,.01,,.8,-0.01,,-190,.5,,.05,,,1] },
+            drive: { message: '<br>Now you seem to get it, but you are still not on the curb.', sound: [1.5,0,250,.02,.02,.2,2,2,,,,,.02,,,.02,.01,,,.1] },
+            outstanding: { message: '<br>Not much left. This is the first of all.', sound: [,,20,.04,,.6,,1.31,,,-990,.06,.17,,,.04,.07] },
+            bad: { message: '<br>You are close. The person who sold it did not want it. The person who bought it did not need it. The person who used it did not know it.', sound: [,.2,40,.5,,1.5,,11,,,,,,199] },
+            coffin: { message: '<br>You made it. The ending was, from the beginning, in your heart.', sound: [,.3,1975,.08,.56,.02,,,-0.4,,-322,.56,.41,,,,.25] },
+            heart: { word: 'Winner', message: '<br>Thanks for having a ridiculous obsession, or for cheating hard enough to read the code. Here are some keys; take one and leave the rest: <br>' + codes, sound: [,,471,,.09,.47,4,1.06,-6.7,,,,,.9,61,.1,,.82,.09,.13] },
+        }
+    };
     
     const handleWordClick = (clickedWord) => {
-        let wordToFetch = clickedWord;
-        let message = '';
-        let sound = null;
-        
-        switch (clickedWord) {
-            case 'peor':
-                message = '<br>¿Has llegado al final? A lo mejor sí, a lo mejor no.';
-                sound = [,,662,.82,.11,.33,1,0,,-0.2,,,,1.2,,.26,.01]; // zzfx sound for bad ending
-                ending(message, sound, wordToFetch);
-                break;
-            case 'mejor':
-                message = '<br>De mejor a peor, y de arriba a...';
-                sound = [,,80,.3,.4,.7,2,.1,-0.73,3.42,-430,.09,.17,,,,.19]; // zzfx sound for good ending
-                ending(message, sound, wordToFetch);
-                break;
-            case 'abajo':
-                message = '<br>...al centro y...';
-                sound = [,.5,847,.02,.3,.9,1,1.67,,,-294,.04,.13,,,,.1];
-                ending(message, sound, wordToFetch);
-                break;
-            case 'adentro':
-                wordToFetch = 'despiste';
-                message = '<br>(esto es una distracción)';
-                sound = [,,172,.8,,.8,1,.76,7.7,3.73,-482,.08,.15,,.14];
-                ending(message, sound, wordToFetch);
-                break;
-            case 'despiste':
-                message = '<br>Si aquí te sales del asfalto, es que te gusta estar con Ducir.';
-                sound = [,0,960,,1,.01,,.8,-0.01,,-190,.5,,.05,,,1];
-                ending(message, sound, wordToFetch);
-                break;
-            case 'conducir':
-                message = '<br>Ahora pareces enterarte, pero todavía no estás encima del bordillo.';
-                sound = [1.5,0,250,.02,.02,.2,2,2,,,,,.02,,,.02,.01,,,.1];
-                ending(message, sound, wordToFetch);
-                break;
-            case 'sobresaliente':
-                message = '<br>Queda poco. Esta es la primera de todas.';
-                sound = [,,20,.04,,.6,,1.31,,,-990,.06,.17,,,.04,.07];
-                ending(message, sound, wordToFetch);
-                break;
-            case 'malo':
-                message = '<br>Estás casi. El hombre que lo vendió no lo quería. El hombre que lo compró no lo necesitaba. El hombre que lo usó no lo conocía.';
-                sound = [,.2,40,.5,,1.5,,11,,,,,,199];
-                ending(message, sound, wordToFetch);
-                break;
-            case 'ataúd':
-                message = '<br>Has llegado. El final estaba, desde el principio, en tu corazón.';
-                sound = [,.3,1975,.08,.56,.02,,,-0.4,,-322,.56,.41,,,,.25];
-                ending(message, sound, wordToFetch);
-                break;
-            case 'corazón':
-                wordToFetch = 'Ganador';
-                message = '<br>Gracias por tener una obsesión ridícula o ser tan tramposo como para mirar el código. Regalo aquí unas claves, coge una y deja para el resto: <br>' + codes;
-                sound = [,,471,,.09,.47,4,1.06,-6.7,,,,,.9,61,.1,,.82,.09,.13];
-                ending(message, sound, wordToFetch);
-                break;
-            default:
-                fetchDefinitions(clickedWord);
-                break;
+        const languageEndings = endings[language];
+        const endingMatch = languageEndings[clickedWord];
+
+        if (endingMatch) {
+            ending(endingMatch.message, endingMatch.sound, endingMatch.word || clickedWord);
+            return;
         }
+
+        fetchDefinitions(clickedWord);
     };
 
     const startGame = (startWord) => {
@@ -402,14 +429,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     giveUpBtn.addEventListener('click', () => {
-        fetchDefinitions('Dignidad');
+        fetchDefinitions(t('giveUpWord'));
         giveUpBtn.style.display = 'none';
         if (sinceGivenUp === 99999) sinceGivenUp = clickCount;
         playSound([1.9,,151,.03,.09,,1,.7,2,-14,,,,.5,,,.22,.85,.12]);
     });
 
     easyBtn.addEventListener('click', () => {
-        fetchDefinitions('Meritocracia');
+        fetchDefinitions(t('easyWord'));
         easyBtn.style.display = 'none';
         searchContainer.style.display = 'inline';
         playSound([,,364,.08,.25,.16,,0,,,-170,.07,.03,,,.1,,.59,.25]);
@@ -419,7 +446,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     getDefinitionBtn.addEventListener('click', async () => {
         const word = wordInput.value;
         if (!word) {
-            responseOutput.textContent = 'Escribe una palabra';
+            responseOutput.textContent = t('emptySearch');
             return;
         }
         playSound([1.09,.8,999,,,,,1.5,,.3,-99,.1,1.63,,,.11,.22]); // zzfx sound for button press
@@ -487,7 +514,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       if (e.key === 'Enter') {
-        if (window.getComputedStyle(startBtn).display !== 'none') startGame('mal');
+        if (window.getComputedStyle(startBtn).display !== 'none') startGame(getStartWord());
         if (selectedIndex !== -1) {
           tabTriggers[selectedIndex].click();
         }
