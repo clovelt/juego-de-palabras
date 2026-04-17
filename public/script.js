@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         roquekes: {
             definitions: {
                 es: [
-                    'Autor, artista o criatura jugable pendiente de definición definitiva. Sin.: placeholder, coautor, nombre propio.',
+                    'Autor, artista o criatura jugable pendiente de definición definitiva. Sin.: marcador de posición, coautor, nombre propio.',
                     'Persona que aparece en los créditos y merece una acepción mejor escrita. Sin.: pendiente, firma, cómplice.'
                 ],
                 en: [
@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         clovelt: {
             definitions: {
                 es: [
-                    'Autor, código o entidad colaboradora pendiente de definición definitiva. Sin.: placeholder, coautor, nombre propio.',
+                    'Autor, código o entidad colaboradora pendiente de definición definitiva. Sin.: marcador de posición, coautor, nombre propio.',
                     'Persona que aparece en los créditos y necesita una acepción menos improvisada. Sin.: pendiente, firma, cómplice.'
                 ],
                 en: [
