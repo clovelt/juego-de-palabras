@@ -230,7 +230,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         titleDiv.style.display = 'none';
         muteBtn.style.display = 'inline';
         muteBtn.classList.add('bottom-buttons');
-        currentWordElement.style.display = 'inline';
+        currentWordElement.style.display = 'block';
         nav.style.display = 'block';
         makeLinks = true;
         if (isCheat) {
@@ -260,7 +260,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         isMuted = !isMuted;
         muteBtn.textContent = isMuted ? 'Ruido' : 'Silencio';
         if (window.getComputedStyle(startBtn).display !== 'none') {
-            currentWordElement.style.display = 'inline';
+            currentWordElement.style.display = 'block';
         }
         fetchDefinitions(isMuted ? 'Silencio' : 'Ruido');
     });
