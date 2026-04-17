@@ -52,7 +52,7 @@
 
         .bottom-buttons {
             position: fixed;
-            bottom: calc(5vh + 44px);
+            bottom: calc(5vh + 88px);
             right: 5vw;
             display: block;
             text-align: right;
@@ -80,6 +80,14 @@
         #muteBtn {
             position: fixed;
             bottom: 5vh;
+            right: 5vw;
+            margin: 0;
+            z-index: 1000;
+        }
+
+        #languageBtn {
+            position: fixed;
+            bottom: calc(5vh + 44px);
             right: 5vw;
             margin: 0;
             z-index: 1000;
@@ -220,7 +228,7 @@
 </head>
 <body>
     <div id="title">
-        <div id="name"> <a href="#" class="startGame" data-word="juego" style="font-size:1.7em;">Juego</a> de <a href="#" class="startGame" data-word="palabras" style="font-size:1.7em;">Palabras</a></div>
+        <div id="name"> <a href="#" class="startGame" data-word="juego" data-word-en="game" style="font-size:1.7em;">Juego</a> de <a href="#" class="startGame" data-word="palabras" data-word-en="words" style="font-size:1.7em;">Palabras</a></div>
         <div id="credits">Por <a href="#" class="startGame definition-credit" data-word="roquekes">Roquekes</a> x <a href="#" class="startGame definition-credit" data-word="clovelt">Clovelt</a><br>Para la <a href="https://x.com/MalagaJam">Málaga Jam</a> (W-18)<br>Definiciones cortesía de la <a href="https://x.com/RAEinforma">RAE</a><br>Tema: <strong>de mal en peor</strong><button id="startBtn">Jugar</button><br><br></div>
     </div>
     <div id="nav" style="display:none;">
@@ -231,6 +239,7 @@
             <button id="getDefinitionBtn">Buscar definición</button>
         </div>
     </div>
+    <button id="languageBtn">English</button>
     <button id="muteBtn">Silencio</button>
     <button id="easyBtn" style="display:none;">Modo fácil (no hay vuelta atrás)</button>
     <button id="giveUpBtn" style="display:none;">Rendirse</button>

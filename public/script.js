@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const giveUpBtn = document.getElementById('giveUpBtn');
     const clicks = document.getElementById('clicks');
     const easyBtn = document.getElementById('easyBtn');
+    const languageBtn = document.getElementById('languageBtn');
     const nav = document.getElementById('nav');
 
     const MAX_LINES = 5;
@@ -79,6 +80,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Mostrar barra de búsqueda si hay ?cheat en la URL
     const urlParams = new URLSearchParams(window.location.search);
     const apiBaseUrl = (urlParams.get('api') || '').replace(/\/$/, '');
+    const browserLanguage = navigator.language || navigator.userLanguage || '';
+    let language = urlParams.get('lang') || (browserLanguage.toLowerCase().startsWith('es') ? 'es' : 'en');
+    language = language.toLowerCase().startsWith('es') ? 'es' : 'en';
     
     const isCheat = urlParams.has('cheat');
 
@@ -96,6 +100,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     let makeLinks;
 
+    const getStartWord = () => language === 'es' ? 'mal' : 'bad';
+
+    const updateLanguageButton = () => {
+        languageBtn.textContent = language === 'es' ? 'English' : 'Español';
+    };
+
+    const updateMuteButton = () => {
+        muteBtn.textContent = isMuted
+            ? (language === 'es' ? 'Ruido' : 'Noise')
+            : (language === 'es' ? 'Silencio' : 'Silence');
+    };
+
+    updateLanguageButton();
+    updateMuteButton();
+
     // Función para obtener definiciones y actualizar la interfaz
     const fetchDefinitions = async (word) => {
         currentWordElement.textContent = word;
@@ -105,7 +124,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         try {
             const localEntry = customDefinitions[word.toLowerCase()];
-            const data = localEntry || await fetchRaeDefinitions(word);
+            const data = localEntry || await fetchDictionaryDefinitions(word);
             loadingMessage.style.display = 'none';
 
             if (data.definitions.length === 0) {
@@ -141,8 +160,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    const fetchRaeDefinitions = async (word) => {
-        const response = await fetch(`${apiBaseUrl}/api/rae/search/${encodeURIComponent(word)}`);
+    const fetchDictionaryDefinitions = async (word) => {
+        const endpoint = language === 'es' ? 'rae' : 'en';
+        const response = await fetch(`${apiBaseUrl}/api/${endpoint}/search/${encodeURIComponent(word)}`);
         if (!response.ok) {
             throw new Error(`Error ${response.status}: ${response.statusText}`);
         }
@@ -283,15 +303,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Evento del botón de inicio
     startBtn.addEventListener('click', (event) => {
-        startGame('mal');
+        startGame(getStartWord());
     });
 
     document.querySelectorAll('.startGame').forEach(startGameLinks => {
         startGameLinks.addEventListener('click', (event) => {
             event.preventDefault();
-            const clickedWord = event.currentTarget.dataset.word || event.currentTarget.textContent.trim();
+            const clickedWord = language === 'es'
+                ? event.currentTarget.dataset.word || event.currentTarget.textContent.trim()
+                : event.currentTarget.dataset.wordEn || event.currentTarget.dataset.word || event.currentTarget.textContent.trim();
             startGame(clickedWord);
         });
+    });
+
+    languageBtn.addEventListener('click', () => {
+        language = language === 'es' ? 'en' : 'es';
+        updateLanguageButton();
+        updateMuteButton();
+        responseOutput.innerHTML = '';
+        messageElement.textContent = '';
+        currentWordElement.style.display = 'none';
     });
 
 
@@ -300,11 +331,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             playSound([1.09,.5,270,,.1,,1,1.5,,,,,,,,.1,.01]);
         }
         isMuted = !isMuted;
-        muteBtn.textContent = isMuted ? 'Ruido' : 'Silencio';
+        updateMuteButton();
         if (window.getComputedStyle(startBtn).display !== 'none') {
             currentWordElement.style.display = 'block';
         }
-        fetchDefinitions(isMuted ? 'Silencio' : 'Ruido');
+        fetchDefinitions(isMuted ? (language === 'es' ? 'Silencio' : 'Silence') : (language === 'es' ? 'Ruido' : 'Noise'));
     });
 
     giveUpBtn.addEventListener('click', () => {
@@ -336,7 +367,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     restartBtn.addEventListener('click', () => {
         clickCount = 0;
         makeLinks = true;
-        fetchDefinitions('mal');
+        fetchDefinitions(getStartWord());
         restartBtn.style.display = 'none';
         messageElement.textContent = '';
         clicks.innerHTML = '';
