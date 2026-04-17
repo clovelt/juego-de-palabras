@@ -1,6 +1,6 @@
 # Juego de Palabras
 
-Juego web que consulta definiciones del DLE/RAE y Wiktionary mediante APIs propias en Cloudflare Pages Functions.
+Juego web que consulta definiciones del DLE/RAE, Wiktionary y Elhuyar mediante APIs propias en Cloudflare Pages Functions.
 
 ## Estructura
 
@@ -62,7 +62,7 @@ Configura el proyecto con:
 
 Las rutas `/api/rae/search/:word`, `/api/en/search/:word` y `/api/eu/search/:word` se sirven desde Cloudflare Pages Functions.
 
-La ruta de euskera usa `eu.wiktionary.org/w/api.php`, obtiene el wikitext de la entrada y extrae las lineas de definicion que empiezan por `#`. Es mas fragil que RAE o el endpoint ingles de Wiktionary, pero mantiene definiciones en euskera cuando la entrada existe.
+La ruta de euskera usa Elhuyar Hiztegia a traves del formulario publico de Euskadi.eus. Hace una busqueda `eu > es`, extrae traducciones, ejemplos y entradas relacionadas del HTML, y las normaliza al formato `{ definitions: [] }` que espera el juego.
 
 ## Deploy por CLI
 
