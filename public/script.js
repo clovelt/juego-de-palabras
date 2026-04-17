@@ -259,6 +259,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         isMuted = !isMuted;
         muteBtn.textContent = isMuted ? 'Ruido' : 'Silencio';
+        if (window.getComputedStyle(startBtn).display !== 'none') {
+            currentWordElement.style.display = 'inline';
+        }
         fetchDefinitions(isMuted ? 'Silencio' : 'Ruido');
     });
 
