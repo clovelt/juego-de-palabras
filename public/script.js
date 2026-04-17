@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentWordIndex = 0;
 
     // Lista de palabras que no deben convertirse en enlaces
-    const excludeWords = ['singular', 'ante', 'prnl', 'der', 'méx', 'hond', 'ant', 'ant', 'fís', 'esc', 'desus', 'sin', 'ec', 'coloq', 'etc', 'debida', 'antambién'];  // Reemplaza con las palabras que deseas excluir
+    const excludeWords = ['singular', 'ante', 'prnl', 'der', 'méx', 'hond', 'ant', 'ant', 'fís', 'esc', 'desus', 'sin', 'ec', 'coloq', 'etc', 'debida', 'antambién', 'hipervínculo'];  // Reemplaza con las palabras que deseas excluir
     const customDefinitions = {
         roquekes: {
             definitions: [
