@@ -76,6 +76,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 en: [
                     'Author, artist, or playable creature awaiting a definitive definition. Syn.: placeholder, coauthor, proper noun.',
                     'Person appearing in the credits who deserves a better-written entry. Syn.: pending, signature, accomplice.'
+                ],
+                eu: [
+                    'Egilea, artista edo jokatzeko izakia, behin betiko definizioaren zain. Sin.: leku-marka, egilekide, izen propio.',
+                    'Kredituetan agertzen den pertsona, hobeto idatzitako adiera merezi duena. Sin.: zain, sinadura, konplize.'
                 ]
             },
             actions: [
@@ -91,11 +95,29 @@ document.addEventListener('DOMContentLoaded', async () => {
                 en: [
                     'Author, code, or collaborating entity awaiting a definitive definition. Syn.: placeholder, coauthor, proper noun.',
                     'Person appearing in the credits who needs a less improvised entry. Syn.: pending, signature, accomplice.'
+                ],
+                eu: [
+                    'Egilea, kodea edo elkarlanerako entitatea, behin betiko definizioaren zain. Sin.: leku-marka, egilekide, izen propio.',
+                    'Kredituetan agertzen den pertsona, hain inprobisatua ez den adiera behar duena. Sin.: zain, sinadura, konplize.'
                 ]
             },
             actions: [
                 { label: 'X / Twitter', url: 'https://x.com/clovelt' }
             ]
+        },
+        jokoa: {
+            definitions: {
+                es: ['Acción de jugar. Sin.: partida, diversión, reto.'],
+                en: ['The act of playing. Syn.: game, play, challenge.'],
+                eu: ['Jolasteko ekintza. Sin.: partida, jolas, erronka.']
+            }
+        },
+        hitzak: {
+            definitions: {
+                es: ['Unidades de significado que sirven para jugar, prometer o meterse en problemas. Sin.: vocablos, términos, trampas.'],
+                en: ['Units of meaning used to play, promise, or get into trouble. Syn.: words, terms, traps.'],
+                eu: ['Esanahia duten unitateak, jolasteko, agintzeko edo arazoetan sartzeko balio dutenak. Sin.: berbak, terminoak, tranpak.']
+            }
         }
     };
 
@@ -103,8 +125,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const urlParams = new URLSearchParams(window.location.search);
     const apiBaseUrl = (urlParams.get('api') || '').replace(/\/$/, '');
     const browserLanguage = navigator.language || navigator.userLanguage || '';
-    let language = urlParams.get('lang') || (browserLanguage.toLowerCase().startsWith('es') ? 'es' : 'en');
-    language = language.toLowerCase().startsWith('es') ? 'es' : 'en';
+    const normalizeLanguage = (value) => {
+        const normalized = (value || '').toLowerCase();
+        if (normalized.startsWith('es')) return 'es';
+        if (normalized.startsWith('eu')) return 'eu';
+        return 'en';
+    };
+    let language = normalizeLanguage(urlParams.get('lang') || browserLanguage);
     
     const isCheat = urlParams.has('cheat');
 
@@ -123,7 +150,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     let makeLinks;
 
-    const getStartWord = () => language === 'es' ? 'mal' : 'bad';
+    const getStartWord = () => ({ es: 'mal', eu: 'oker', en: 'bad' }[language]);
 
     const copy = {
         es: {
@@ -153,6 +180,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             restart: 'Volver a "mal"',
             giveUpWord: 'Dignidad',
             easyWord: 'Meritocracia',
+            muteSilence: 'Silencio',
+            muteNoise: 'Ruido',
+            silenceWord: 'Silencio',
+            noiseWord: 'Ruido',
         },
         en: {
             pageTitle: 'From bad to worse',
@@ -181,6 +212,42 @@ document.addEventListener('DOMContentLoaded', async () => {
             restart: 'Back to "bad"',
             giveUpWord: 'dignity',
             easyWord: 'meritocracy',
+            muteSilence: 'Silence',
+            muteNoise: 'Noise',
+            silenceWord: 'Silence',
+            noiseWord: 'Noise',
+        },
+        eu: {
+            pageTitle: 'Okerretik okerragora',
+            cheatSuffix: ' (baina tranpatia zara)',
+            titleWordOne: 'Hitz',
+            titleConnector: '',
+            titleWordTwo: 'Jokoa',
+            byLabel: 'Egileak',
+            jamLabel: 'Honentzat:',
+            dictionaryCredit: 'Definizioak hemendik:',
+            dictionarySource: 'Wiktionary',
+            dictionarySourceUrl: 'https://eu.wiktionary.org/',
+            themeLabel: 'Gaia:',
+            themeText: 'okerretik okerragora',
+            start: 'Jolastu',
+            searchPlaceholder: 'Idatzi hitz bat',
+            search: 'Definizioa bilatu',
+            loading: 'Definizioak kargatzen...',
+            noDefinitions: 'Ez dago definiziorik.',
+            error: 'Zerbait gaizki joan da',
+            emptySearch: 'Idatzi hitz bat',
+            counter: 'Def.',
+            searched: 'Bilatutako definizioak:',
+            giveUp: 'Amore eman',
+            easy: 'Modu erraza (atzera bueltarik ez)',
+            restart: 'Itzuli "oker" hitzera',
+            giveUpWord: 'duintasun',
+            easyWord: 'meritokrazia',
+            muteSilence: 'Isilik',
+            muteNoise: 'Soinua',
+            silenceWord: 'isilki',
+            noiseWord: 'zarata',
         }
     };
 
@@ -220,9 +287,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     const updateMuteButton = () => {
-        muteBtn.textContent = isMuted
-            ? (language === 'es' ? 'Ruido' : 'Noise')
-            : (language === 'es' ? 'Silencio' : 'Silence');
+        muteBtn.textContent = isMuted ? t('muteNoise') : t('muteSilence');
     };
 
     const t = (key) => copy[language][key];
@@ -279,7 +344,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     const fetchDictionaryDefinitions = async (word) => {
-        const endpoint = language === 'es' ? 'rae' : 'en';
+        const endpoint = { es: 'rae', eu: 'eu', en: 'en' }[language];
         const response = await fetch(`${apiBaseUrl}/api/${endpoint}/search/${encodeURIComponent(word)}`);
         if (!response.ok) {
             throw new Error(`Error ${response.status}: ${response.statusText}`);
@@ -365,6 +430,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             bad: { message: '<br>You are close. The person who sold it did not want it. The person who bought it did not need it. The person who used it did not know it.', sound: [,.2,40,.5,,1.5,,11,,,,,,199] },
             coffin: { message: '<br>You made it. The ending was, from the beginning, in your heart.', sound: [,.3,1975,.08,.56,.02,,,-0.4,,-322,.56,.41,,,,.25] },
             heart: { word: 'Winner', message: '<br>Thanks for having a ridiculous obsession, or for cheating hard enough to read the code. Here are some keys; take one and leave the rest: <br>' + codes, sound: [,,471,,.09,.47,4,1.06,-6.7,,,,,.9,61,.1,,.82,.09,.13] },
+        },
+        eu: {
+            okerrago: { message: '<br>Amaierara iritsi zara? Agian bai, agian ez.', sound: [,,662,.82,.11,.33,1,0,,-0.2,,,,1.2,,.26,.01] },
+            hobeto: { message: '<br>Hobetik okerragora, eta goitik...', sound: [,,80,.3,.4,.7,2,.1,-0.73,3.42,-430,.09,.17,,,,.19] },
+            behera: { message: '<br>...erdira eta...', sound: [,.5,847,.02,.3,.9,1,1.67,,,-294,.04,.13,,,,.1] },
+            barrura: { word: 'distrakzio', message: '<br>(hau distrakzio bat da)', sound: [,,172,.8,,.8,1,.76,7.7,3.73,-482,.08,.15,,.14] },
+            distrakzio: { message: '<br>Hemen bidetik ateratzen bazara, engainatua izatea gustatzen zaizu.', sound: [,0,960,,1,.01,,.8,-0.01,,-190,.5,,.05,,,1] },
+            gidatu: { message: '<br>Orain ulertzen ari zarela dirudi, baina oraindik ez zaude ertzean.', sound: [1.5,0,250,.02,.02,.2,2,2,,,,,.02,,,.02,.01,,,.1] },
+            bikain: { message: '<br>Gutxi falta da. Hau guztien lehena da.', sound: [,,20,.04,,.6,,1.31,,,-990,.06,.17,,,.04,.07] },
+            oker: { message: '<br>Ia hor zaude. Saldu zuenak ez zuen nahi. Erosi zuenak ez zuen behar. Erabili zuenak ez zuen ezagutzen.', sound: [,.2,40,.5,,1.5,,11,,,,,,199] },
+            hilkutxa: { message: '<br>Iritsi zara. Amaiera, hasieratik, zure bihotzean zegoen.', sound: [,.3,1975,.08,.56,.02,,,-0.4,,-322,.56,.41,,,,.25] },
+            bihotz: { word: 'Irabazle', message: '<br>Eskerrik asko obsesio barregarri bat izateagatik, edo kodea irakurtzeraino tranpa egiteagatik. Hemen giltza batzuk; hartu bat eta utzi gainerakoak: <br>' + codes, sound: [,,471,,.09,.47,4,1.06,-6.7,,,,,.9,61,.1,,.82,.09,.13] },
         }
     };
     
@@ -405,7 +482,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             event.preventDefault();
             const clickedWord = language === 'es'
                 ? event.currentTarget.dataset.word || event.currentTarget.textContent.trim()
-                : event.currentTarget.dataset.wordEn || event.currentTarget.dataset.word || event.currentTarget.textContent.trim();
+                : event.currentTarget.dataset[`word${language.charAt(0).toUpperCase() + language.slice(1)}`] || event.currentTarget.dataset.word || event.currentTarget.textContent.trim();
             startGame(clickedWord);
         });
     });
@@ -436,7 +513,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (window.getComputedStyle(startBtn).display !== 'none') {
             currentWordElement.style.display = 'block';
         }
-        fetchDefinitions(isMuted ? (language === 'es' ? 'Silencio' : 'Silence') : (language === 'es' ? 'Ruido' : 'Noise'));
+        fetchDefinitions(isMuted ? t('silenceWord') : t('noiseWord'));
     });
 
     giveUpBtn.addEventListener('click', () => {
