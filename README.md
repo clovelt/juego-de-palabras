@@ -8,16 +8,13 @@ Juego web que consulta definiciones del DLE/RAE mediante una API propia.
 - `functions/`: funciones de Cloudflare Pages para `/api/rae/...`.
 - `server.js`: servidor Express heredado para correrlo como app Node tradicional.
 
-## Desarrollo
+## Desarrollo local
 
-Requiere Node 20 o superior para usar Wrangler.
+Hay dos formas de probar el proyecto.
 
-```bash
-npm install
-npm run dev
-```
+### Frontend local + API desplegada
 
-Para probar solo el frontend local usando la API ya desplegada en Cloudflare:
+No requiere instalar dependencias de Node. Sirve solo el frontend local y usa la API de Cloudflare Pages:
 
 ```bash
 cd public
@@ -30,6 +27,28 @@ Abre:
 http://localhost:8000?api=https://juego-de-palabras.pages.dev
 ```
 
+Puedes forzar idioma:
+
+```text
+http://localhost:8000?api=https://juego-de-palabras.pages.dev&lang=es
+http://localhost:8000?api=https://juego-de-palabras.pages.dev&lang=en
+```
+
+### Cloudflare Pages local
+
+Requiere Node 20 o superior para usar Wrangler. Emula frontend y funciones en local:
+
+```bash
+npm install
+npm run dev
+```
+
+Abre la URL que muestre Wrangler, normalmente:
+
+```text
+http://localhost:8788
+```
+
 ## Deploy en Cloudflare Pages
 
 Configura el proyecto con:
@@ -40,7 +59,7 @@ Configura el proyecto con:
 - Build output directory: `public`
 - Node version: `20` o superior
 
-La ruta `/api/rae/search/:word` se sirve desde Cloudflare Pages Functions.
+Las rutas `/api/rae/search/:word` y `/api/en/search/:word` se sirven desde Cloudflare Pages Functions.
 
 ## Deploy por CLI
 

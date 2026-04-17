@@ -17,6 +17,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     const easyBtn = document.getElementById('easyBtn');
     const languageBtn = document.getElementById('languageBtn');
     const nav = document.getElementById('nav');
+    const titleWordOne = document.getElementById('titleWordOne');
+    const titleWordTwo = document.getElementById('titleWordTwo');
+    const titleConnector = document.getElementById('titleConnector');
+    const byLabel = document.getElementById('byLabel');
+    const jamLabel = document.getElementById('jamLabel');
+    const dictionaryCredit = document.getElementById('dictionaryCredit');
+    const dictionarySource = document.getElementById('dictionarySource');
+    const themeLabel = document.getElementById('themeLabel');
+    const themeText = document.getElementById('themeText');
 
     const MAX_LINES = 5;
 
@@ -102,6 +111,57 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const getStartWord = () => language === 'es' ? 'mal' : 'bad';
 
+    const copy = {
+        es: {
+            titleWordOne: 'Juego',
+            titleConnector: 'de',
+            titleWordTwo: 'Palabras',
+            byLabel: 'Por',
+            jamLabel: 'Para la',
+            dictionaryCredit: 'Definiciones cortesía de la',
+            dictionarySource: 'RAE',
+            dictionarySourceUrl: 'https://x.com/RAEinforma',
+            themeLabel: 'Tema:',
+            themeText: 'de mal en peor',
+            start: 'Jugar',
+            searchPlaceholder: 'Escribe una palabra',
+            search: 'Buscar definición',
+        },
+        en: {
+            titleWordOne: 'Game',
+            titleConnector: 'of',
+            titleWordTwo: 'Words',
+            byLabel: 'By',
+            jamLabel: 'For',
+            dictionaryCredit: 'Definitions courtesy of',
+            dictionarySource: 'Wiktionary',
+            dictionarySourceUrl: 'https://en.wiktionary.org/',
+            themeLabel: 'Theme:',
+            themeText: 'from bad to worse',
+            start: 'Play',
+            searchPlaceholder: 'Type a word',
+            search: 'Search definition',
+        }
+    };
+
+    const applyLanguage = () => {
+        const text = copy[language];
+        document.documentElement.lang = language;
+        titleWordOne.textContent = text.titleWordOne;
+        titleConnector.textContent = text.titleConnector;
+        titleWordTwo.textContent = text.titleWordTwo;
+        byLabel.textContent = text.byLabel;
+        jamLabel.textContent = text.jamLabel;
+        dictionaryCredit.textContent = text.dictionaryCredit;
+        dictionarySource.textContent = text.dictionarySource;
+        dictionarySource.href = text.dictionarySourceUrl;
+        themeLabel.textContent = text.themeLabel;
+        themeText.textContent = text.themeText;
+        startBtn.textContent = text.start;
+        wordInput.placeholder = text.searchPlaceholder;
+        getDefinitionBtn.textContent = text.search;
+    };
+
     const updateLanguageButton = () => {
         languageBtn.textContent = language === 'es' ? 'English' : 'Español';
     };
@@ -112,6 +172,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             : (language === 'es' ? 'Silencio' : 'Silence');
     };
 
+    applyLanguage();
     updateLanguageButton();
     updateMuteButton();
 
@@ -291,6 +352,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         playSound([,,224,.02,.02,.08,1,1.7,-13.9,,,,,,6.7]);
         startBtn.style.display = 'none';
         titleDiv.style.display = 'none';
+        languageBtn.style.display = 'none';
         muteBtn.style.display = 'inline';
         currentWordElement.style.display = 'block';
         nav.style.display = 'block';
@@ -318,6 +380,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     languageBtn.addEventListener('click', () => {
         language = language === 'es' ? 'en' : 'es';
+        applyLanguage();
         updateLanguageButton();
         updateMuteButton();
         responseOutput.innerHTML = '';
