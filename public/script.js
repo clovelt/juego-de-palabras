@@ -63,6 +63,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     let dictionaryWords = [];
     let currentWordIndex = 0;
+    const noDefinitionWords = new Set();
 
     // Lista de palabras que no deben convertirse en enlaces
     const excludeWords = ['singular', 'ante', 'prnl', 'der', 'méx', 'hond', 'ant', 'ant', 'fís', 'esc', 'desus', 'sin', 'ec', 'coloq', 'etc', 'debida', 'antambién', 'hipervínculo'];  // Reemplaza con las palabras que deseas excluir
@@ -291,6 +292,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     const t = (key) => copy[language][key];
+    const wordKey = (word) => `${language}:${word.toLowerCase()}`;
 
     applyLanguage();
     updateLanguageSelector();
@@ -311,8 +313,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             loadingMessage.style.display = 'none';
 
             if (data.definitions.length === 0) {
+                noDefinitionWords.add(wordKey(word));
                 responseOutput.textContent = t('noDefinitions');
-                return;
+                giveUpBtn.disabled = false;
+                return false;
             }
 
             // Mostrar definiciones con efecto de máquina de escribir y sonido
@@ -336,10 +340,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             };
             typeWriter();
+            return true;
 
         } catch (error) {
             loadingMessage.style.display = 'none';
             responseOutput.textContent = `${t('error')}: ${error.message}`;
+            giveUpBtn.disabled = false;
+            return false;
         }
     };
 
@@ -371,29 +378,43 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Función para convertir palabras en enlaces clicables, excluyendo ciertas palabras y palabras de una sola letra
     const linkify = (text) => {
         return text.replace(/([\p{L}\p{M}\p{N}]+)/gu, (match) => {
-            return excludeWords.includes(match.toLowerCase()) || (!isCheat && match.length < 4) ? match : `<a href="#" class="ag-tab">${match}</a>`;
+            const normalized = match.toLowerCase();
+            return excludeWords.includes(normalized) || noDefinitionWords.has(wordKey(normalized)) || (!isCheat && match.length < 4) ? match : `<a href="#" class="ag-tab">${match}</a>`;
         });
+    };
+
+    const registerSuccessfulClick = () => {
+        clickCount++;
+        clicks.innerHTML = t('counter') + ' ' + (clickCount + 1);
+        if (clickCount > 7 && sinceGivenUp === 99999) {
+            giveUpBtn.style.display = 'inline';
+        }
+        if (clickCount > sinceGivenUp + 6) {
+            easyBtn.style.display = 'inline';
+            sinceGivenUp = 99999999;
+        }
+        playSound([1.09,,523.25,.01,.01,.09,1,1.41,,,,,,.1,,.05,.97,.02]); // zzfx sound for clicking link
     };
 
     // Función para agregar eventos de clic a los enlaces
     const addClickEventToLinks = () => {
         const links = responseOutput.querySelectorAll('a');
         links.forEach(link => {
-            link.addEventListener('click', (event) => {
+            link.addEventListener('click', async (event) => {
                 event.preventDefault();
                 const clickedWord = link.textContent.toLowerCase();
                 giveUpBtn.disabled = true;
-                clickCount++;
-                clicks.innerHTML = t('counter') + ' ' + (clickCount+1);
-                if (clickCount > 7 && sinceGivenUp === 99999) {
-                    giveUpBtn.style.display = 'inline';
+
+                if (endings[language][clickedWord]) {
+                    registerSuccessfulClick();
+                    handleWordClick(clickedWord);
+                    return;
                 }
-                if (clickCount > sinceGivenUp+6) {
-                    easyBtn.style.display = 'inline';
-                    sinceGivenUp = 99999999;
+
+                const hasDefinitions = await handleWordClick(clickedWord);
+                if (hasDefinitions) {
+                    registerSuccessfulClick();
                 }
-                playSound([1.09,,523.25,.01,.01,.09,1,1.41,,,,,,.1,,.05,.97,.02]); // zzfx sound for clicking link
-                handleWordClick(clickedWord);
             });
         });
     };
@@ -445,16 +466,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
     
-    const handleWordClick = (clickedWord) => {
+    const handleWordClick = async (clickedWord) => {
         const languageEndings = endings[language];
         const endingMatch = languageEndings[clickedWord];
 
         if (endingMatch) {
             ending(endingMatch.message, endingMatch.sound, endingMatch.word || clickedWord);
-            return;
+            return true;
         }
 
-        fetchDefinitions(clickedWord);
+        return fetchDefinitions(clickedWord);
     };
 
     const startGame = (startWord) => {
