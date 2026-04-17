@@ -19,10 +19,35 @@
         }
 
         button {
-            padding: 10px;
-            margin: 60px 0 50px 20px;
+            padding: 9px 14px;
+            margin: 60px 0 50px 12px;
             font-size: 1em;
             font-family: 'Work Sans', sans-serif;
+            color: #131313;
+            background: #fff;
+            border: 1px solid #131313;
+            border-radius: 6px;
+            box-shadow: 0 2px 0 #131313;
+            cursor: pointer;
+            transition: transform 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+        }
+
+        button:hover {
+            background: #f7f7f2;
+            box-shadow: 0 4px 0 #131313;
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            box-shadow: 0 1px 0 #131313;
+            transform: translateY(1px);
+        }
+
+        button:disabled {
+            cursor: default;
+            opacity: 0.55;
+            transform: none;
+            box-shadow: 0 2px 0 #131313;
         }
 
         .bottom-buttons {
@@ -62,6 +87,18 @@
             font-family: 'Work Sans', sans-serif;
             font-size: 1.1em;
             font-weight: 500;
+        }
+
+        #credits a {
+            color: #131313;
+            border-bottom: 1px solid #1a30d7;
+            padding-bottom: 1px;
+            text-decoration: none;
+        }
+
+        #credits a:hover {
+            color: #1a30d7;
+            background: #f7f7f2;
         }
 
         #current-word {
@@ -119,15 +156,15 @@
             <button id="getDefinitionBtn">Buscar definición</button>
         </div>
     </div>
-    <div id="current-word" style="display:none;">Cargando...</div>
-    <div id="loading">Cargando definiciones...</div>
-    <div id="definitions"></div>
-    <div id="message"></div>
     <button id="startBtn">Jugar</button>
     <button id="muteBtn">Silencio</button>
     <button id="easyBtn" style="display:none;">Modo fácil (no hay vuelta atrás)</button>
     <button id="giveUpBtn" style="display:none;">Rendirse</button>
     <button id="restartBtn" style="display:none;">Volver a "mal"</button>   
+    <div id="current-word" style="display:none;">Cargando...</div>
+    <div id="loading">Cargando definiciones...</div>
+    <div id="definitions"></div>
+    <div id="message"></div>
     <div class="bottom-buttons">
         <div id="clicks"></div>
     </div>
