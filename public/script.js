@@ -55,6 +55,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Lista de palabras que no deben convertirse en enlaces
     const excludeWords = ['singular', 'ante', 'prnl', 'der', 'méx', 'hond', 'ant', 'ant', 'fís', 'esc', 'desus', 'sin', 'ec', 'coloq', 'etc', 'debida', 'antambién'];  // Reemplaza con las palabras que deseas excluir
+    const customDefinitions = {
+        roquekes: [
+            'Autor, artista o criatura jugable pendiente de definición definitiva. Sin.: placeholder, coautor, nombre propio.',
+            'Persona que aparece en los créditos y merece una acepción mejor escrita. Sin.: pendiente, firma, cómplice.'
+        ],
+        clovelt: [
+            'Autor, código o entidad colaboradora pendiente de definición definitiva. Sin.: placeholder, coautor, nombre propio.',
+            'Persona que aparece en los créditos y necesita una acepción menos improvisada. Sin.: pendiente, firma, cómplice.'
+        ]
+    };
 
     // Mostrar barra de búsqueda si hay ?cheat en la URL
     const urlParams = new URLSearchParams(window.location.search);
@@ -84,12 +94,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         messageElement.textContent = '';
 
         try {
-            const response = await fetch(`${apiBaseUrl}/api/rae/search/${encodeURIComponent(word)}`);
-            if (!response.ok) {
-                throw new Error(`Error ${response.status}: ${response.statusText}`);
-            }
-
-            const data = await response.json();
+            const localDefinitions = customDefinitions[word.toLowerCase()];
+            const data = localDefinitions ? { definitions: localDefinitions } : await fetchRaeDefinitions(word);
             loadingMessage.style.display = 'none';
 
             if (data.definitions.length === 0) {
@@ -120,6 +126,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             loadingMessage.style.display = 'none';
             responseOutput.textContent = `Algo ha fallado: ${error.message}`;
         }
+    };
+
+    const fetchRaeDefinitions = async (word) => {
+        const response = await fetch(`${apiBaseUrl}/api/rae/search/${encodeURIComponent(word)}`);
+        if (!response.ok) {
+            throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
     };
 
     // Función para convertir palabras en enlaces clicables, excluyendo ciertas palabras y palabras de una sola letra
@@ -229,7 +243,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         startBtn.style.display = 'none';
         titleDiv.style.display = 'none';
         muteBtn.style.display = 'inline';
-        muteBtn.classList.add('bottom-buttons');
         currentWordElement.style.display = 'block';
         nav.style.display = 'block';
         makeLinks = true;
