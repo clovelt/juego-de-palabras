@@ -56,14 +56,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Lista de palabras que no deben convertirse en enlaces
     const excludeWords = ['singular', 'ante', 'prnl', 'der', 'méx', 'hond', 'ant', 'ant', 'fís', 'esc', 'desus', 'sin', 'ec', 'coloq', 'etc', 'debida', 'antambién'];  // Reemplaza con las palabras que deseas excluir
     const customDefinitions = {
-        roquekes: [
-            'Autor, artista o criatura jugable pendiente de definición definitiva. Sin.: placeholder, coautor, nombre propio.',
-            'Persona que aparece en los créditos y merece una acepción mejor escrita. Sin.: pendiente, firma, cómplice.'
-        ],
-        clovelt: [
-            'Autor, código o entidad colaboradora pendiente de definición definitiva. Sin.: placeholder, coautor, nombre propio.',
-            'Persona que aparece en los créditos y necesita una acepción menos improvisada. Sin.: pendiente, firma, cómplice.'
-        ]
+        roquekes: {
+            definitions: [
+                'Autor, artista o criatura jugable pendiente de definición definitiva. Sin.: placeholder, coautor, nombre propio.',
+                'Persona que aparece en los créditos y merece una acepción mejor escrita. Sin.: pendiente, firma, cómplice.'
+            ],
+            actions: [
+                { label: 'Instagram', url: 'https://www.instagram.com/roquekes?igsh=Z3UwODg0YjZvNGhr' }
+            ]
+        },
+        clovelt: {
+            definitions: [
+                'Autor, código o entidad colaboradora pendiente de definición definitiva. Sin.: placeholder, coautor, nombre propio.',
+                'Persona que aparece en los créditos y necesita una acepción menos improvisada. Sin.: pendiente, firma, cómplice.'
+            ],
+            actions: [
+                { label: 'X / Twitter', url: 'https://x.com/clovelt' }
+            ]
+        }
     };
 
     // Mostrar barra de búsqueda si hay ?cheat en la URL
@@ -94,8 +104,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         messageElement.textContent = '';
 
         try {
-            const localDefinitions = customDefinitions[word.toLowerCase()];
-            const data = localDefinitions ? { definitions: localDefinitions } : await fetchRaeDefinitions(word);
+            const localEntry = customDefinitions[word.toLowerCase()];
+            const data = localEntry || await fetchRaeDefinitions(word);
             loadingMessage.style.display = 'none';
 
             if (data.definitions.length === 0) {
@@ -117,6 +127,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     setTimeout(typeWriter, isCheat? 10 : 500); // Tiempo
                 } else {
                     addClickEventToLinks();
+                    if (data.actions) {
+                        addDefinitionActions(data.actions);
+                    }
                     giveUpBtn.disabled = false;
                 }
             };
@@ -134,6 +147,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             throw new Error(`Error ${response.status}: ${response.statusText}`);
         }
         return response.json();
+    };
+
+    const addDefinitionActions = (actions) => {
+        const actionsElement = document.createElement('div');
+        actionsElement.className = 'definition-actions';
+
+        actions.forEach(action => {
+            const link = document.createElement('a');
+            link.href = action.url;
+            link.textContent = action.label;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            actionsElement.appendChild(link);
+        });
+
+        responseOutput.appendChild(actionsElement);
     };
 
     // Función para convertir palabras en enlaces clicables, excluyendo ciertas palabras y palabras de una sola letra

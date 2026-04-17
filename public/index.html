@@ -120,6 +120,10 @@
             transform: translateY(1px);
         }
 
+        #credits a.definition-credit {
+            color: #1a30d7;
+        }
+
         #current-word {
             font-family: 'Baskervville', sans-serif;
             text-transform: lowercase;
@@ -160,12 +164,41 @@
         }
 
         .ag-tab-selected {border-bottom: 2.5px solid #E58000;}
+
+        .definition-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 18px;
+        }
+
+        .definition-actions a {
+            color: #131313;
+            background: #fff;
+            border: 1px solid #131313;
+            border-radius: 6px;
+            box-shadow: 0 2px 0 #131313;
+            padding: 7px 11px;
+            text-decoration: none;
+            transition: transform 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+        }
+
+        .definition-actions a:hover {
+            background: #f7f7f2;
+            box-shadow: 0 4px 0 #131313;
+            transform: translateY(-2px);
+        }
+
+        .definition-actions a:active {
+            box-shadow: 0 1px 0 #131313;
+            transform: translateY(1px);
+        }
     </style>
 </head>
 <body>
     <div id="title">
         <div id="name"> <a href="#" class="startGame" data-word="juego" style="font-size:1.7em;">Juego</a> de <a href="#" class="startGame" data-word="palabras" style="font-size:1.7em;">Palabras</a></div>
-        <div id="credits">Por <a href="#" class="startGame" data-word="roquekes">Roquekes</a> x <a href="#" class="startGame" data-word="clovelt">Clovelt</a><br>Para la <a href="https://x.com/MalagaJam">Málaga Jam</a> (W-18)<br>Definiciones cortesía de la <a href="https://x.com/RAEinforma">RAE</a><br>Tema: de mal en peor<br><br></div>
+        <div id="credits">Por <a href="#" class="startGame definition-credit" data-word="roquekes">Roquekes</a> x <a href="#" class="startGame definition-credit" data-word="clovelt">Clovelt</a><br>Para la <a href="https://x.com/MalagaJam">Málaga Jam</a> (W-18)<br>Definiciones cortesía de la <a href="https://x.com/RAEinforma">RAE</a><br>Tema: de mal en peor<br><br></div>
     </div>
     <div id="nav" style="display:none;">
         <button id="nextBtn" style="display:none;">←</button>
