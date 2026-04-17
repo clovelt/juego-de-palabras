@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>De mal en peor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Work+Sans&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sofia+Sans+Extra+Condensed&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Baskervville&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Work Sans', sans-serif;
+            font-size: 1em;
+            padding: 40px;
+            padding-left: 50px;
+            color: #131313;
+        }
+
+        button {
+            padding: 10px;
+            margin: 60px 0 50px 20px;
+            font-size: 1em;
+            font-family: 'Work Sans', sans-serif;
+        }
+
+        .bottom-buttons {
+            position: fixed;
+            bottom: 5vh;
+            right: 5vw;
+            display: flex;
+            z-index: 1000;
+        }
+
+        #getDefinitionBtn {
+            margin: 0;
+            margin-left: 10px;
+            padding: 5px;
+            font-size: 0.85em;
+        }
+
+        #wordInput {
+            padding: 5px;
+        }
+
+        #nextBtn, #prevBtn {
+            margin: 0;
+            margin-right: 10px;
+            padding: 5px 7.5px 5px 7.5px;
+            font-size: 0.85em;
+        }
+        
+        #name {
+            font-family: 'Baskervville', sans-serif;
+            font-size: 2.2em;
+            margin: none;
+            padding-bottom: 20px;
+        }
+
+        #credits {
+            font-family: 'Work Sans', sans-serif;
+            font-size: 1.1em;
+            font-weight: 500;
+        }
+
+        #current-word {
+            font-family: 'Baskervville', sans-serif;
+            text-transform: lowercase;
+            font-size: 3em;
+            font-weight: bold;
+        }
+
+        #loading {
+            display: none;
+            font-family: monospace;
+            white-space: nowrap;
+            overflow: hidden;
+            border-right: 3px solid;
+            animation: typing 2s steps(20, end), blink-caret .75s step-end infinite;
+        }
+
+        #search-container {
+            display: none;
+        }
+
+        a {
+            text-decoration: none;
+            color: #1a30d7;
+        }
+
+        #definitions {
+            line-height: 1.5em;
+        }
+
+        @keyframes typing {
+            from { width: 0 }
+            to { width: 100% }
+        }
+
+        @keyframes blink-caret {
+            from, to { border-color: transparent }
+            50% { border-color: black }
+        }
+
+        .ag-tab-selected {border-bottom: 2.5px solid #E58000;}
+    </style>
+</head>
+<body>
+    <div id="title">
+        <div id="name"> <a href="#" style="font-size:1.7em;">Juego</a> de <a href="#" style="font-size:1.7em;">Palabras</a></div>
+        <div id="credits">Por <a href="https://www.instagram.com/roquekes?igsh=Z3UwODg0YjZvNGhr">Roquekes</a> x <a href="https://x.com/clovelt">Clovelt</a><br>Para la <a href="https://x.com/MalagaJam">Málaga Jam</a> (W-18)<br>Definiciones cortesía de la <a href="https://x.com/RAEinforma">RAE</a><br>Tema: de mal en peor<br><br></div>
+    </div>
+    <div id="nav" style="display:none;">
+        <button id="nextBtn" style="display:none;">←</button>
+        <button id="prevBtn" style="display:none;">→</button>
+        <div id="search-container" style="display:none;">
+            <input type="text" id="wordInput" placeholder="Escribe una palabra">
+            <button id="getDefinitionBtn">Buscar definición</button>
+        </div>
+    </div>
+    <div id="current-word" style="display:none;">Cargando...</div>
+    <div id="loading">Cargando definiciones...</div>
+    <div id="definitions"></div>
+    <div id="message"></div>
+    <button id="startBtn">Jugar</button>
+    <button id="muteBtn">Silencio</button>
+    <button id="easyBtn" style="display:none;">Modo fácil (no hay vuelta atrás)</button>
+    <button id="giveUpBtn" style="display:none;">Rendirse</button>
+    <button id="restartBtn" style="display:none;">Volver a "mal"</button>   
+    <div class="bottom-buttons">
+        <div id="clicks"></div>
+    </div>
+
+    <script>
+        'use strict';
+let // ZzFXMicro - Zuper Zmall Zound Zynth - v1.3.1 by Frank Force ~ 1000 bytes
+zzfxV=.3,               // volume
+zzfxX=new AudioContext, // audio context
+zzfx=                   // play sound
+(p=1,k=.05,b=220,e=0,r=0,t=.1,q=0,D=1,u=0,y=0,v=0,z=0,l=0,E=0,A=0,F=0,c=0,w=1,m=0,B=0
+,N=0)=>{let M=Math,d=2*M.PI,R=44100,G=u*=500*d/R/R,C=b*=(1-k+2*k*M.random(k=[]))*d/R,
+g=0,H=0,a=0,n=1,I=0,J=0,f=0,h=N<0?-1:1,x=d*h*N*2/R,L=M.cos(x),Z=M.sin,K=Z(x)/4,O=1+K,
+X=-2*L/O,Y=(1-K)/O,P=(1+h*L)/2/O,Q=-(h+L)/O,S=P,T=0,U=0,V=0,W=0;e=R*e+9;m*=R;r*=R;t*=
+R;c*=R;y*=500*d/R**3;A*=d/R;v*=d/R;z*=R;l=R*l|0;p*=zzfxV;for(h=e+m+r+t+c|0;a<h;k[a++]
+=f*p)++J%(100*F|0)||(f=q?1<q?2<q?3<q?Z(g**3):M.max(M.min(M.tan(g),1),-1):1-(2*g/d%2+2)
+%2:1-4*M.abs(M.round(g/d)-g/d):Z(g),f=(l?1-B+B*Z(d*a/l):1)*(f<0?-1:1)*M.abs(f)**D*(a<
+e?a/e:a<e+m?1-(a-e)/m*(1-w):a<e+m+r?w:a<h-c?(h-a-c)/t*w:0),f=c?f/2+(c>a?0:(a<h-c?1:(h
+-a)/c)*k[a-c|0]/2/p):f,N?f=W=S*T+Q*(T=U)+P*(U=f)-Y*V-X*(V=W):0),x=(b+=u+=y)*M.cos(A*
+H++),g+=x+x*E*Z(a**5),n&&++n>z&&(b+=v,C+=v,n=0),!l||++I%l||(b=C,u=G,n=n||1);p=zzfxX.
+createBuffer(1,h,R);p.getChannelData(0).set(k);b=zzfxX.createBufferSource();
+b.buffer=p;b.connect(zzfxX.destination);b.start()}
+    </script>
+    <script src="script.js"></script>
+</body>
+</html>

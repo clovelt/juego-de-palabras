@@ -1,0 +1,356 @@
+document.addEventListener('DOMContentLoaded', async () => {
+    // Elementos de la interfaz
+    const startBtn = document.getElementById('startBtn');
+    const muteBtn = document.getElementById('muteBtn');
+    const responseOutput = document.getElementById('definitions');
+    const loadingMessage = document.getElementById('loading');
+    const wordInput = document.getElementById('wordInput');
+    const getDefinitionBtn = document.getElementById('getDefinitionBtn');
+    const currentWordElement = document.getElementById('current-word');
+    const messageElement = document.getElementById('message');
+    const restartBtn = document.getElementById('restartBtn');
+    const searchContainer = document.getElementById('search-container');
+    const titleDiv = document.getElementById('title');
+    const nameDiv = document.getElementById('name');
+    const giveUpBtn = document.getElementById('giveUpBtn');
+    const clicks = document.getElementById('clicks');
+    const easyBtn = document.getElementById('easyBtn');
+    const nav = document.getElementById('nav');
+
+    const MAX_LINES = 5;
+
+    const codes = `
+    CNLE2-907ZL-8YAV9
+    3NHI6-477GR-GMCRG
+    27TLM-6CP4X-APIAL
+    Y9YEN-GCE2G-ADNGX
+    LEVMA-YHW0B-874A9
+    L80J2-YCVIJ-697HG
+    W3Q44-LVKAJ-JGI2K
+    DFHE7-RENW3-KB6RR
+    W0MXW-7AVIP-5DI4C
+    A4Q95-DVT3Z-TVTQC
+    IXG5F-XZ6G0-LQYEN
+    CKNHI-V9ENA-TWBTI
+    FHN8L-GEQZK-TX4J7
+    CWQIW-2YZXF-IJ006
+    0Q6XX-0C89V-KM5ZJ
+    GM42A-N9P0H-4GLIM
+    7NDRD-5MM6P-W24QA
+    BCKXH-BMI2Y-IZAQ6
+    WF3Q2-32YAM-0WV5I
+    NFXQG-CF0JI-JL3GG
+    QY4JK-LQV23-VWVZ6
+    7M3BN-Z6KW0-EFT7H
+    CBEAV-YMZVR-JM3CP
+    HFIBY-ZH3VG-PAGEA
+    `;
+
+    let isMuted = false;
+    let clickCount = 0;
+    let sinceGivenUp = 99999;
+
+    let dictionaryWords = [];
+    let currentWordIndex = 0;
+
+    // Lista de palabras que no deben convertirse en enlaces
+    const excludeWords = ['singular', 'ante', 'prnl', 'der', 'méx', 'hond', 'ant', 'ant', 'fís', 'esc', 'desus', 'sin', 'ec', 'coloq', 'etc', 'debida', 'antambién'];  // Reemplaza con las palabras que deseas excluir
+
+    // Mostrar barra de búsqueda si hay ?cheat en la URL
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    const isCheat = urlParams.has('cheat');
+
+    if (isCheat) {
+        document.title += " (pero eres un tramposo)";
+        nameDiv.textContent += " (pero eres un tramposo)";
+    }
+
+    // Función para reproducir sonidos
+    const playSound = (sound) => {
+        if (!isMuted) {
+            zzfx(...sound);
+        }
+    };
+
+    let makeLinks;
+
+    // Función para obtener definiciones y actualizar la interfaz
+    const fetchDefinitions = async (word) => {
+        currentWordElement.textContent = word;
+        responseOutput.innerHTML = '';
+        loadingMessage.style.display = 'block';
+        messageElement.textContent = '';
+
+        try {
+            const response = await fetch(`/api/rae/search/${word}`);
+            if (!response.ok) {
+                throw new Error(`Error ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            loadingMessage.style.display = 'none';
+
+            if (data.definitions.length === 0) {
+                responseOutput.textContent = 'No hay definiciones.';
+                return;
+            }
+
+            // Mostrar definiciones con efecto de máquina de escribir y sonido
+            responseOutput.innerHTML = '';
+            let index = 0;
+            const typeWriter = () => {
+                if (index < Math.min(data.definitions.length, MAX_LINES)) {
+                    const definitionElement = document.createElement('div');
+                    const text = `<strong style="font-family: monospace;">${index + 1}. </strong> ${makeLinks ? linkify(data.definitions[index]) : data.definitions[index]}`;
+                    definitionElement.innerHTML = text.replace(/(Sin\.|Ant\.)/g, '<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="font-family: Baskervville;">$1<span>');
+                    responseOutput.appendChild(definitionElement);
+                    playSound([1.09,,261,.01,.01,.09,1,1.41,,,,,,.1,,.05,.97,.02]); // zzfx sound for loading line
+                    index++;
+                    setTimeout(typeWriter, isCheat? 10 : 500); // Tiempo
+                } else {
+                    addClickEventToLinks();
+                    giveUpBtn.disabled = false;
+                }
+            };
+            typeWriter();
+
+        } catch (error) {
+            loadingMessage.style.display = 'none';
+            responseOutput.textContent = `Algo ha fallado: ${error.message}`;
+        }
+    };
+
+    // Función para convertir palabras en enlaces clicables, excluyendo ciertas palabras y palabras de una sola letra
+    const linkify = (text) => {
+        return text.replace(/([\p{L}\p{M}\p{N}]+)/gu, (match) => {
+            return excludeWords.includes(match.toLowerCase()) || (!isCheat && match.length < 4) ? match : `<a href="#" class="ag-tab">${match}</a>`;
+        });
+    };
+
+    // Función para agregar eventos de clic a los enlaces
+    const addClickEventToLinks = () => {
+        const links = responseOutput.querySelectorAll('a');
+        links.forEach(link => {
+            link.addEventListener('click', (event) => {
+                event.preventDefault();
+                const clickedWord = link.textContent.toLowerCase();
+                giveUpBtn.disabled = true;
+                clickCount++;
+                clicks.innerHTML = 'Def. ' + (clickCount+1);
+                if (clickCount > 7 && sinceGivenUp === 99999) {
+                    giveUpBtn.style.display = 'inline';
+                }
+                if (clickCount > sinceGivenUp+6) {
+                    easyBtn.style.display = 'inline';
+                    sinceGivenUp = 99999999;
+                }
+                playSound([1.09,,523.25,.01,.01,.09,1,1.41,,,,,,.1,,.05,.97,.02]); // zzfx sound for clicking link
+                handleWordClick(clickedWord);
+            });
+        });
+    };
+
+    const ending = (message, sound, wordToFetch) => {
+        makeLinks = false;
+        fetchDefinitions(wordToFetch);
+        messageElement.innerHTML = '<p style="font-size:1.3em;">' + message + ' <br> <strong>Definiciones buscadas: ' + clickCount + '</strong> </p>';
+        restartBtn.style.display = 'inline';
+        playSound(sound);
+    };
+    
+    const handleWordClick = (clickedWord) => {
+        let wordToFetch = clickedWord;
+        let message = '';
+        let sound = null;
+        
+        switch (clickedWord) {
+            case 'peor':
+                message = '<br>¿Has llegado al final? A lo mejor sí, a lo mejor no.';
+                sound = [,,662,.82,.11,.33,1,0,,-0.2,,,,1.2,,.26,.01]; // zzfx sound for bad ending
+                ending(message, sound, wordToFetch);
+                break;
+            case 'mejor':
+                message = '<br>De mejor a peor, y de arriba a...';
+                sound = [,,80,.3,.4,.7,2,.1,-0.73,3.42,-430,.09,.17,,,,.19]; // zzfx sound for good ending
+                ending(message, sound, wordToFetch);
+                break;
+            case 'abajo':
+                message = '<br>...al centro y...';
+                sound = [,.5,847,.02,.3,.9,1,1.67,,,-294,.04,.13,,,,.1];
+                ending(message, sound, wordToFetch);
+                break;
+            case 'adentro':
+                wordToFetch = 'despiste';
+                message = '<br>(esto es una distracción)';
+                sound = [,,172,.8,,.8,1,.76,7.7,3.73,-482,.08,.15,,.14];
+                ending(message, sound, wordToFetch);
+                break;
+            case 'despiste':
+                message = '<br>Si aquí te sales del asfalto, es que te gusta estar con Ducir.';
+                sound = [,0,960,,1,.01,,.8,-0.01,,-190,.5,,.05,,,1];
+                ending(message, sound, wordToFetch);
+                break;
+            case 'conducir':
+                message = '<br>Ahora pareces enterarte, pero todavía no estás encima del bordillo.';
+                sound = [1.5,0,250,.02,.02,.2,2,2,,,,,.02,,,.02,.01,,,.1];
+                ending(message, sound, wordToFetch);
+                break;
+            case 'sobresaliente':
+                message = '<br>Queda poco. Esta es la primera de todas.';
+                sound = [,,20,.04,,.6,,1.31,,,-990,.06,.17,,,.04,.07];
+                ending(message, sound, wordToFetch);
+                break;
+            case 'malo':
+                message = '<br>Estás casi. El hombre que lo vendió no lo quería. El hombre que lo compró no lo necesitaba. El hombre que lo usó no lo conocía.';
+                sound = [,.2,40,.5,,1.5,,11,,,,,,199];
+                ending(message, sound, wordToFetch);
+                break;
+            case 'ataúd':
+                message = '<br>Has llegado. El final estaba, desde el principio, en tu corazón.';
+                sound = [,.3,1975,.08,.56,.02,,,-0.4,,-322,.56,.41,,,,.25];
+                ending(message, sound, wordToFetch);
+                break;
+            case 'corazón':
+                wordToFetch = 'Ganador';
+                message = '<br>Gracias por tener una obsesión ridícula o ser tan tramposo como para mirar el código. Regalo aquí unas claves, coge una y deja para el resto: <br>' + codes;
+                sound = [,,471,,.09,.47,4,1.06,-6.7,,,,,.9,61,.1,,.82,.09,.13];
+                ending(message, sound, wordToFetch);
+                break;
+            default:
+                fetchDefinitions(clickedWord);
+                break;
+        }
+    };
+
+    const startGame = (startWord) => {
+        playSound([,,224,.02,.02,.08,1,1.7,-13.9,,,,,,6.7]);
+        startBtn.style.display = 'none';
+        titleDiv.style.display = 'none';
+        muteBtn.style.display = 'inline';
+        muteBtn.classList.add('bottom-buttons');
+        currentWordElement.style.display = 'inline';
+        nav.style.display = 'block';
+        makeLinks = true;
+        if (isCheat) {
+            searchContainer.style.display = 'inline';
+        }
+        fetchDefinitions(startWord);
+    };
+    
+    // Evento del botón de inicio
+    startBtn.addEventListener('click', (event) => {
+        startGame('mal');
+    });
+
+    document.querySelectorAll('.startGame').forEach(startGameLinks => {
+        startGameLinks.addEventListener('click', (event) => {
+            const clickedWord = event.target.textContent.trim();
+            startGame(clickedWord);
+        });
+    });
+
+
+    muteBtn.addEventListener('click', () => {
+        if (!isMuted) {
+            playSound([1.09,.5,270,,.1,,1,1.5,,,,,,,,.1,.01]);
+        }
+        isMuted = !isMuted;
+        muteBtn.textContent = isMuted ? 'Ruido' : 'Silencio';
+        fetchDefinitions(isMuted ? 'Silencio' : 'Ruido');
+    });
+
+    giveUpBtn.addEventListener('click', () => {
+        fetchDefinitions('Dignidad');
+        giveUpBtn.style.display = 'none';
+        if (sinceGivenUp === 99999) sinceGivenUp = clickCount;
+        playSound([1.9,,151,.03,.09,,1,.7,2,-14,,,,.5,,,.22,.85,.12]);
+    });
+
+    easyBtn.addEventListener('click', () => {
+        fetchDefinitions('Meritocracia');
+        easyBtn.style.display = 'none';
+        searchContainer.style.display = 'inline';
+        playSound([,,364,.08,.25,.16,,0,,,-170,.07,.03,,,.1,,.59,.25]);
+    });
+
+    // Obtener definiciones al hacer clic en el botón
+    getDefinitionBtn.addEventListener('click', async () => {
+        const word = wordInput.value;
+        if (!word) {
+            responseOutput.textContent = 'Escribe una palabra';
+            return;
+        }
+        playSound([1.09,.8,999,,,,,1.5,,.3,-99,.1,1.63,,,.11,.22]); // zzfx sound for button press
+        fetchDefinitions(word);
+    });
+
+    // Reiniciar el juego al hacer clic en el botón "Volver a 'mal'"
+    restartBtn.addEventListener('click', () => {
+        clickCount = 0;
+        makeLinks = true;
+        fetchDefinitions('mal');
+        restartBtn.style.display = 'none';
+        messageElement.textContent = '';
+        clicks.innerHTML = '';
+        playSound([1.09,0,960,,1,.01,,.8,-0.01,,-190,.5,,.05,,,1]); // zzfx sound for restart
+    });
+
+    const tabClass = '.ag-tab';
+    const selectedTabClass = 'ag-tab-selected';
+
+    document.querySelectorAll(tabClass).forEach(tab => {
+      tab.addEventListener('click', e => {
+        if (tab.classList.contains(selectedTabClass)) {
+          return;
+        }
+        const selectedTab = document.querySelector(`.${selectedTabClass}`);
+        if (selectedTab) {
+          selectedTab.classList.remove(selectedTabClass);
+        }
+        tab.classList.add(selectedTabClass);
+      });
+    });
+
+    document.addEventListener('keydown', e => {
+      let tabTriggers = Array.from(document.querySelectorAll(tabClass)).filter(tab => {
+        return window.getComputedStyle(tab).display !== 'none';
+      });
+      let selectedIndex = -1;
+      // Find the currently selected tab index
+      for (let i = 0; i < tabTriggers.length; i++) {
+        if (tabTriggers[i].classList.contains(selectedTabClass)) {
+          selectedIndex = i;
+          break;
+        }
+      }
+
+      if (e.key === 'ArrowRight') {
+        if (selectedIndex === -1) {
+          tabTriggers[0].classList.add(selectedTabClass);
+        } else if (selectedIndex < tabTriggers.length - 1) {
+          tabTriggers[selectedIndex].classList.remove(selectedTabClass);
+          tabTriggers[selectedIndex + 1].classList.add(selectedTabClass);
+        } else {
+        }
+      }
+
+      if (e.key === 'ArrowLeft') {
+        if (selectedIndex === -1) {
+          tabTriggers[0].classList.add(selectedTabClass);
+        } else if (selectedIndex > 0) {
+          tabTriggers[selectedIndex].classList.remove(selectedTabClass);
+          tabTriggers[selectedIndex - 1].classList.add(selectedTabClass);
+        } else {
+        }
+      }
+
+      if (e.key === 'Enter') {
+        if (window.getComputedStyle(startBtn).display !== 'none') startGame('mal');
+        if (selectedIndex !== -1) {
+          tabTriggers[selectedIndex].click();
+        }
+      }
+    });
+
+});
