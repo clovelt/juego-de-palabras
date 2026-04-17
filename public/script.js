@@ -63,6 +63,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     let dictionaryWords = [];
     let currentWordIndex = 0;
+    const LANGUAGE_STORAGE_KEY = 'juegoDePalabrasLanguage';
+    const definitionCache = new Map();
     const noDefinitionWords = new Set();
 
     // Lista de palabras que no deben convertirse en enlaces
@@ -126,13 +128,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     const urlParams = new URLSearchParams(window.location.search);
     const apiBaseUrl = (urlParams.get('api') || '').replace(/\/$/, '');
     const browserLanguage = navigator.language || navigator.userLanguage || '';
+    const getStoredLanguage = () => {
+        try {
+            return localStorage.getItem(LANGUAGE_STORAGE_KEY);
+        } catch (error) {
+            return null;
+        }
+    };
+    const setStoredLanguage = (selectedLanguage) => {
+        try {
+            localStorage.setItem(LANGUAGE_STORAGE_KEY, selectedLanguage);
+        } catch (error) {
+            // Ignore storage errors so private browsing does not break the game.
+        }
+    };
     const normalizeLanguage = (value) => {
         const normalized = (value || '').toLowerCase();
         if (normalized.startsWith('es')) return 'es';
         if (normalized.startsWith('eu')) return 'eu';
         return 'en';
     };
-    let language = normalizeLanguage(urlParams.get('lang') || browserLanguage);
+    let language = normalizeLanguage(urlParams.get('lang') || getStoredLanguage() || browserLanguage);
+    setStoredLanguage(language);
     
     const isCheat = urlParams.has('cheat');
 
@@ -306,10 +323,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         messageElement.textContent = '';
 
         try {
-            const localEntry = customDefinitions[word.toLowerCase()];
-            const data = localEntry
-                ? { definitions: localEntry.definitions[language], actions: localEntry.actions }
-                : await fetchDictionaryDefinitions(word);
+            const data = await getDefinitionData(word);
             loadingMessage.style.display = 'none';
 
             if (data.definitions.length === 0) {
@@ -322,10 +336,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Mostrar definiciones con efecto de máquina de escribir y sonido
             responseOutput.innerHTML = '';
             let index = 0;
-            const typeWriter = () => {
+            const typeWriter = async () => {
                 if (index < Math.min(data.definitions.length, MAX_LINES)) {
                     const definitionElement = document.createElement('div');
-                    const text = `<strong style="font-family: monospace;">${index + 1}. </strong> ${makeLinks ? linkify(data.definitions[index]) : data.definitions[index]}`;
+                    const definitionText = makeLinks ? await linkify(data.definitions[index]) : escapeHtml(data.definitions[index]);
+                    const text = `<strong style="font-family: monospace;">${index + 1}. </strong> ${definitionText}`;
                     definitionElement.innerHTML = text.replace(/(Sin\.|Ant\.)/g, '<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="font-family: Baskervville;">$1<span>');
                     responseOutput.appendChild(definitionElement);
                     playSound([1.09,,261,.01,.01,.09,1,1.41,,,,,,.1,,.05,.97,.02]); // zzfx sound for loading line
@@ -348,6 +363,26 @@ document.addEventListener('DOMContentLoaded', async () => {
             giveUpBtn.disabled = false;
             return false;
         }
+    };
+
+    const getDefinitionData = async (word) => {
+        const key = wordKey(word);
+
+        if (definitionCache.has(key)) {
+            return definitionCache.get(key);
+        }
+
+        const localEntry = customDefinitions[word.toLowerCase()];
+        const data = localEntry
+            ? { definitions: localEntry.definitions[language] || [], actions: localEntry.actions }
+            : await fetchDictionaryDefinitions(word);
+
+        definitionCache.set(key, data);
+        if (data.definitions.length === 0) {
+            noDefinitionWords.add(key);
+        }
+
+        return data;
     };
 
     const fetchDictionaryDefinitions = async (word) => {
@@ -375,12 +410,75 @@ document.addEventListener('DOMContentLoaded', async () => {
         responseOutput.appendChild(actionsElement);
     };
 
+    const canLinkWord = async (word) => {
+        const normalized = word.toLowerCase();
+
+        if (endings[language][normalized]) {
+            return true;
+        }
+
+        if (excludeWords.includes(normalized) || noDefinitionWords.has(wordKey(normalized)) || (!isCheat && normalized.length < 4)) {
+            return false;
+        }
+
+        if (language !== 'eu') {
+            return true;
+        }
+
+        try {
+            const data = await getDefinitionData(normalized);
+            return data.definitions.length > 0;
+        } catch (error) {
+            noDefinitionWords.add(wordKey(normalized));
+            return false;
+        }
+    };
+
+    const shouldCheckWord = (word) => {
+        const normalized = word.toLowerCase();
+        return !excludeWords.includes(normalized) && !noDefinitionWords.has(wordKey(normalized)) && (isCheat || normalized.length >= 4);
+    };
+
+    const escapeHtml = (value) => value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+
     // Función para convertir palabras en enlaces clicables, excluyendo ciertas palabras y palabras de una sola letra
-    const linkify = (text) => {
-        return text.replace(/([\p{L}\p{M}\p{N}]+)/gu, (match) => {
-            const normalized = match.toLowerCase();
-            return excludeWords.includes(normalized) || noDefinitionWords.has(wordKey(normalized)) || (!isCheat && match.length < 4) ? match : `<a href="#" class="ag-tab">${match}</a>`;
-        });
+    const linkify = async (text) => {
+        const wordPattern = /([\p{L}\p{M}\p{N}]+)/gu;
+        const wordsToCheck = new Set();
+        let match;
+
+        while ((match = wordPattern.exec(text)) !== null) {
+            const normalized = match[0].toLowerCase();
+            if (shouldCheckWord(normalized)) {
+                wordsToCheck.add(normalized);
+            }
+        }
+
+        const linkableWords = new Map(await Promise.all(
+            Array.from(wordsToCheck, async (word) => [word, await canLinkWord(word)]),
+        ));
+
+        let linkedText = '';
+        let lastIndex = 0;
+        wordPattern.lastIndex = 0;
+
+        while ((match = wordPattern.exec(text)) !== null) {
+            const word = match[0];
+            const normalized = word.toLowerCase();
+            linkedText += escapeHtml(text.slice(lastIndex, match.index));
+            linkedText += linkableWords.get(normalized)
+                ? `<a href="#" class="ag-tab">${escapeHtml(word)}</a>`
+                : escapeHtml(word);
+            lastIndex = wordPattern.lastIndex;
+        }
+
+        linkedText += escapeHtml(text.slice(lastIndex));
+        return linkedText;
     };
 
     const registerSuccessfulClick = () => {
@@ -515,6 +613,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
             language = selectedLanguage;
+            setStoredLanguage(language);
             applyLanguage();
             updateLanguageSelector();
             updateMuteButton();
