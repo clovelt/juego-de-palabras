@@ -246,7 +246,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.querySelectorAll('.startGame').forEach(startGameLinks => {
         startGameLinks.addEventListener('click', (event) => {
-            const clickedWord = event.target.textContent.trim();
+            event.preventDefault();
+            const clickedWord = event.currentTarget.dataset.word || event.currentTarget.textContent.trim();
             startGame(clickedWord);
         });
     });
