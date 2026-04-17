@@ -85,12 +85,35 @@
             z-index: 1000;
         }
 
-        #languageBtn {
+        #languageSelector {
             position: fixed;
             top: 40px;
             right: 5vw;
+            display: flex;
+            gap: 6px;
             margin: 0;
             z-index: 1000;
+        }
+
+        #languageSelector button {
+            min-width: 44px;
+            margin: 0;
+            padding: 7px 10px;
+            font-size: 0.85em;
+            line-height: 1;
+        }
+
+        #languageSelector button.is-active {
+            color: #fff;
+            background: #131313;
+            box-shadow: 0 1px 0 #131313;
+            transform: none;
+        }
+
+        #languageSelector button.is-active:hover {
+            background: #131313;
+            box-shadow: 0 1px 0 #131313;
+            transform: none;
         }
 
         #startBtn {
@@ -239,7 +262,10 @@
             <button id="getDefinitionBtn">Buscar definición</button>
         </div>
     </div>
-    <button id="languageBtn">English</button>
+    <div id="languageSelector" aria-label="Selector de idioma">
+        <button class="language-option" type="button" data-lang="es" aria-pressed="false">ES</button>
+        <button class="language-option" type="button" data-lang="en" aria-pressed="false">EN</button>
+    </div>
     <button id="muteBtn">Silencio</button>
     <button id="easyBtn" style="display:none;">Modo fácil (no hay vuelta atrás)</button>
     <button id="giveUpBtn" style="display:none;">Rendirse</button>

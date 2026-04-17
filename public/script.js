@@ -15,7 +15,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const giveUpBtn = document.getElementById('giveUpBtn');
     const clicks = document.getElementById('clicks');
     const easyBtn = document.getElementById('easyBtn');
-    const languageBtn = document.getElementById('languageBtn');
+    const languageSelector = document.getElementById('languageSelector');
+    const languageOptions = Array.from(document.querySelectorAll('.language-option'));
     const nav = document.getElementById('nav');
     const titleWordOne = document.getElementById('titleWordOne');
     const titleWordTwo = document.getElementById('titleWordTwo');
@@ -210,8 +211,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    const updateLanguageButton = () => {
-        languageBtn.textContent = language === 'es' ? 'English' : 'Español';
+    const updateLanguageSelector = () => {
+        languageOptions.forEach(option => {
+            const isActive = option.dataset.lang === language;
+            option.classList.toggle('is-active', isActive);
+            option.setAttribute('aria-pressed', String(isActive));
+        });
     };
 
     const updateMuteButton = () => {
@@ -223,7 +228,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const t = (key) => copy[language][key];
 
     applyLanguage();
-    updateLanguageButton();
+    updateLanguageSelector();
     updateMuteButton();
 
     // Función para obtener definiciones y actualizar la interfaz
@@ -379,7 +384,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         playSound([,,224,.02,.02,.08,1,1.7,-13.9,,,,,,6.7]);
         startBtn.style.display = 'none';
         titleDiv.style.display = 'none';
-        languageBtn.style.display = 'none';
+        languageSelector.style.display = 'none';
         muteBtn.style.display = 'inline';
         currentWordElement.style.display = 'block';
         nav.style.display = 'block';
@@ -405,14 +410,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 
-    languageBtn.addEventListener('click', () => {
-        language = language === 'es' ? 'en' : 'es';
-        applyLanguage();
-        updateLanguageButton();
-        updateMuteButton();
-        responseOutput.innerHTML = '';
-        messageElement.textContent = '';
-        currentWordElement.style.display = 'none';
+    languageOptions.forEach(option => {
+        option.addEventListener('click', () => {
+            const selectedLanguage = option.dataset.lang;
+            if (!selectedLanguage || selectedLanguage === language) {
+                return;
+            }
+            language = selectedLanguage;
+            applyLanguage();
+            updateLanguageSelector();
+            updateMuteButton();
+            responseOutput.innerHTML = '';
+            messageElement.textContent = '';
+            currentWordElement.style.display = 'none';
+        });
     });
 
 
