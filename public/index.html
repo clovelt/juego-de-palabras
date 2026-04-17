@@ -90,15 +90,26 @@
         }
 
         #credits a {
+            display: inline-block;
             color: #131313;
-            border-bottom: 1px solid #1a30d7;
-            padding-bottom: 1px;
+            background: #fff;
+            border: 1px solid #131313;
+            border-radius: 6px;
+            box-shadow: 0 1px 0 #131313;
+            padding: 1px 6px 2px;
             text-decoration: none;
+            transition: transform 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
         }
 
         #credits a:hover {
-            color: #1a30d7;
             background: #f7f7f2;
+            box-shadow: 0 3px 0 #131313;
+            transform: translateY(-2px);
+        }
+
+        #credits a:active {
+            box-shadow: 0 1px 0 #131313;
+            transform: translateY(1px);
         }
 
         #current-word {
