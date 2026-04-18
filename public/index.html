@@ -52,7 +52,7 @@
 
         .bottom-buttons {
             position: fixed;
-            bottom: calc(5vh + 88px);
+            bottom: calc(5vh + 48px);
             right: 5vw;
             display: block;
             text-align: right;
@@ -246,6 +246,46 @@
         .definition-actions a:active {
             box-shadow: 0 1px 0 #131313;
             transform: translateY(1px);
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 58px 16px 24px;
+            }
+
+            #languageSelector {
+                top: 12px;
+                right: 12px;
+                gap: 4px;
+            }
+
+            #languageSelector button {
+                min-width: 38px;
+                padding: 7px 8px;
+            }
+
+            #name {
+                font-size: 1.45em;
+                line-height: 1.05;
+                padding-bottom: 14px;
+            }
+
+            #credits {
+                font-size: 1em;
+            }
+
+            button {
+                margin-left: 0;
+            }
+
+            .bottom-buttons {
+                bottom: calc(5vh + 48px);
+                right: 12px;
+            }
+
+            #muteBtn {
+                right: 12px;
+            }
         }
     </style>
 </head>

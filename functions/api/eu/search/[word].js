@@ -1,4 +1,4 @@
-const ELHUYAR_SEARCH_URL = "https://www.euskadi.eus/web01-apelhuya/eu/ab34aElhuyarHiztegiaWar/ab34ahiztegia/bilatu";
+const EEH_SEARCH_URL = "https://www.ehu.eus/eeh/cgi/bila";
 
 const JSON_HEADERS = {
   "Content-Type": "application/json; charset=utf-8",
@@ -19,113 +19,136 @@ export async function onRequestGet({ params }) {
   }
 
   try {
-    const exactHtml = await requestElhuyar(word);
-    let definitions = extractDefinitions(exactHtml);
+    for (const term of buildSearchTerms(word)) {
+      const html = await requestEeh(term);
+      const definitions = extractDefinitions(html, term);
 
-    if (definitions.length === 0) {
-      const wildcardHtml = await requestElhuyar(`${word}*`);
-      definitions = extractDefinitions(wildcardHtml);
+      if (definitions.length > 0) {
+        return json({ definitions });
+      }
     }
 
-    return json({ definitions });
+    return json({ definitions: [] });
   } catch (error) {
     return json({ error: error.message || String(error) }, 500);
   }
 }
 
-async function requestElhuyar(term) {
-  const body = new URLSearchParams({
-    hizk: "E",
-    terminoaSort: term,
-  });
+function buildSearchTerms(word) {
+  const normalized = word.toLowerCase();
+  const terms = [normalized];
+  const add = (term) => {
+    if (term && term.length >= 3) {
+      terms.push(term);
+    }
+  };
 
-  const response = await fetch(ELHUYAR_SEARCH_URL, {
-    method: "POST",
+  if (normalized.endsWith("ak")) {
+    add(normalized.slice(0, -1));
+    add(normalized.slice(0, -2));
+  }
+
+  if (normalized.endsWith("ek")) {
+    add(normalized.slice(0, -1));
+    add(normalized.slice(0, -2));
+  }
+
+  if (normalized.endsWith("a")) {
+    add(normalized.slice(0, -1));
+  }
+
+  if (normalized.endsWith("tzeko")) {
+    const stem = normalized.slice(0, -5);
+    add(`${stem}tu`);
+    add(`${stem}du`);
+    add(stem);
+  }
+
+  if (normalized.endsWith("teko")) {
+    const stem = normalized.slice(0, -4);
+    add(`${stem}tu`);
+    add(stem);
+  }
+
+  for (const suffix of ["etan", "etara", "etatik", "arekin", "aren", "ari", "ean", "en", "ko", "ra", "tik", "tan", "an"]) {
+    if (normalized.endsWith(suffix)) {
+      add(normalized.slice(0, -suffix.length));
+    }
+  }
+
+  return unique(terms);
+}
+
+async function requestEeh(term) {
+  const url = new URL(EEH_SEARCH_URL);
+  url.searchParams.set("z", term);
+
+  const response = await fetch(url, {
     headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
+      Accept: "text/html",
       "User-Agent": "JuegoDePalabras/1.0 (https://juego-de-palabras.pages.dev)",
     },
-    body,
   });
 
   if (!response.ok) {
-    throw new Error(`Elhuyar responded with ${response.status}`);
+    throw new Error(`EEH responded with ${response.status}`);
   }
 
   return response.text();
 }
 
-function extractDefinitions(html) {
-  const entry = firstMatch(html, /<h2>\s*([\s\S]*?)\s*<\/h2>/i);
-  const jumbotron = firstMatch(html, /<div class="jumbotron">([\s\S]*?)<div class="logo_elhuyar">/i) || "";
-
-  if (!entry || !jumbotron) {
-    return [];
-  }
-
+function extractDefinitions(html, requestedTerm) {
+  const rows = [...html.matchAll(/<tr>\s*<td\s+class=["']eehE["'][^>]*>([\s\S]*?)<\/td>\s*<td\s+class=["']eeh["'][^>]*>([\s\S]*?)<\/td>\s*<\/tr>/gi)];
   const definitions = [];
-  const senseBlocks = jumbotron.split("<!-- Adi-zki -->").slice(1);
+  let isCollectingEntry = false;
+  let foundEntry = false;
 
-  for (const block of senseBlocks) {
-    const beforeExamples = block.split("<!-- Adibideak -->")[0] || block;
-    const category = cleanText(firstMatch(beforeExamples, /<!-- kategoria-->\s*([\s\S]*?)<!-- eremugeogr-->/i));
-    const translation = cleanText(lastTranslationChunk(beforeExamples));
-    const examples = extractExamples(block);
+  for (const [, rawEntry, rawDefinition] of rows) {
+    const entry = cleanText(rawEntry);
+    const definition = cleanText(rawDefinition);
 
-    if (!translation) {
+    if (!definition) {
       continue;
     }
 
-    const prefix = category ? `${category}: ` : "";
-    const example = examples[0] ? ` | ${examples[0]}` : "";
-    definitions.push(`${entry}. ${prefix}${translation}${example}`);
-
-    if (definitions.length >= 8) {
-      return definitions;
+    if (entry) {
+      if (entryMatches(entry, requestedTerm)) {
+        isCollectingEntry = true;
+        foundEntry = true;
+      } else if (foundEntry) {
+        break;
+      } else {
+        isCollectingEntry = false;
+      }
     }
-  }
 
-  if (definitions.length === 0) {
-    definitions.push(...extractRelatedTerms(jumbotron, entry));
+    if (isCollectingEntry) {
+      definitions.push(removeEehSenseNumber(definition));
+    }
   }
 
   return unique(definitions).slice(0, 12);
 }
 
-function lastTranslationChunk(block) {
-  const matches = [...block.matchAll(/((?:<a [^>]*\/ordaina\/[\s\S]*?<\/a>|[A-Za-zÀ-ÿñÑ,\- ]+)(?:\s*[,;]\s*(?:<a [^>]*\/ordaina\/[\s\S]*?<\/a>|[A-Za-zÀ-ÿñÑ,\- ]+))*)/g)]
-    .map((match) => match[1])
-    .filter((value) => /\/ordaina\//.test(value));
-
-  return matches.at(-1) || "";
+function removeEehSenseNumber(definition) {
+  return definition
+    .replace(/^\d+[a-z]?\s+/u, "")
+    .replace(/^((?:\p{L}+(?:,\s*)?)+)\s+\d+[a-z]?\s+/u, "$1 ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
-function extractExamples(block) {
-  const examples = [];
-  const matches = block.matchAll(/<em>([\s\S]*?)<\/em>\s*:\s*&nbsp;\s*([\s\S]*?)(?=<|\n)/g);
-
-  for (const match of matches) {
-    const basque = cleanText(match[1]);
-    const spanish = cleanText(match[2]);
-
-    if (basque && spanish) {
-      examples.push(`${basque}: ${spanish}`);
-    }
-  }
-
-  return examples;
+function entryMatches(entry, requestedTerm) {
+  return normalizeEntry(entry) === normalizeEntry(requestedTerm);
 }
 
-function extractRelatedTerms(jumbotron, entry) {
-  const terms = [...jumbotron.matchAll(/class="list-group-item active">([\s\S]*?)<\/a>/g)]
-    .map((match) => cleanText(match[1]))
-    .filter((term) => term && term.toLowerCase() !== entry.toLowerCase());
-
-  return unique(terms).map((term) => `${entry}. Lotutako sarrera: ${term}`);
-}
-
-function firstMatch(value, pattern) {
-  return value.match(pattern)?.[1] || "";
+function normalizeEntry(value) {
+  return cleanText(value)
+    .toLowerCase()
+    .split(",")[0]
+    .replace(/[()[\].;:]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function cleanText(value) {
@@ -137,7 +160,10 @@ function cleanText(value) {
       .replace(/\s+/g, " ")
       .replace(/\s+([,.;:])/g, "$1")
       .trim(),
-  );
+  )
+    .replace(/\s+/g, " ")
+    .replace(/\s+([,.;:])/g, "$1")
+    .trim();
 }
 
 function decodeHtml(value) {
@@ -146,9 +172,12 @@ function decodeHtml(value) {
     .replace(/&#41;/g, ")")
     .replace(/&#91;/g, "[")
     .replace(/&#93;/g, "]")
+    .replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCharCode(parseInt(code, 16)))
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
     .replace(/&apos;/g, "'")
+    .replace(/&bull;/g, "")
     .replace(/&nbsp;/g, " ")
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
