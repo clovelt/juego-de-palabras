@@ -65,7 +65,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentWordIndex = 0;
     const LANGUAGE_STORAGE_KEY = 'juegoDePalabrasLanguage';
     const definitionCache = new Map();
+    const definitionRequests = new Map();
     const noDefinitionWords = new Set();
+    let definitionRenderId = 0;
 
     // Lista de palabras que no deben convertirse en enlaces
     const excludeWords = ['singular', 'ante', 'prnl', 'der', 'méx', 'hond', 'ant', 'ant', 'fís', 'esc', 'desus', 'sin', 'ec', 'coloq', 'etc', 'debida', 'antambién', 'hipervínculo'];  // Reemplaza con las palabras que deseas excluir
@@ -73,8 +75,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         roquekes: {
             definitions: {
                 es: [
-                    'Autor, artista o criatura jugable pendiente de definición definitiva. Sin.: marcador de posición, coautor, nombre propio.',
-                    'Persona que aparece en los créditos y merece una acepción mejor escrita. Sin.: pendiente, firma, cómplice.'
+                    'Criatura de digestión ideática inagotable y somnolencia ardua. No crea robots malvados porque es bueno. Sin.: Roque, Ro, Roke, Roquiño, Roquito, Marcos, Antón.',
+                    'Persona que aparece en los créditos de este juego. Sin.: cocreador, ideador, diseñador.'
                 ],
                 en: [
                     'Author, artist, or playable creature awaiting a definitive definition. Syn.: placeholder, coauthor, proper noun.',
@@ -86,14 +88,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 ]
             },
             actions: [
-                { label: 'Instagram', url: 'https://www.instagram.com/roquekes?igsh=Z3UwODg0YjZvNGhr' }
+                { label: 'Instagram', url: 'https://www.instagram.com/roquekes' }
             ]
         },
         clovelt: {
             definitions: {
                 es: [
                     'Autor, código o entidad colaboradora pendiente de definición definitiva. Sin.: marcador de posición, coautor, nombre propio.',
-                    'Persona que aparece en los créditos y necesita una acepción menos improvisada. Sin.: pendiente, firma, cómplice.'
+                    'Persona que aparece en los créditos de este juego. Sin.: cocreador, programador, manitas.'
                 ],
                 en: [
                     'Author, code, or collaborating entity awaiting a definitive definition. Syn.: placeholder, coauthor, proper noun.',
@@ -107,20 +109,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             actions: [
                 { label: 'X / Twitter', url: 'https://x.com/clovelt' }
             ]
-        },
-        jokoa: {
-            definitions: {
-                es: ['Acción de jugar. Sin.: partida, diversión, reto.'],
-                en: ['The act of playing. Syn.: game, play, challenge.'],
-                eu: ['Jolasteko ekintza. Sin.: partida, jolas, erronka.']
-            }
-        },
-        hitzak: {
-            definitions: {
-                es: ['Unidades de significado que sirven para jugar, prometer o meterse en problemas. Sin.: vocablos, términos, trampas.'],
-                en: ['Units of meaning used to play, promise, or get into trouble. Syn.: words, terms, traps.'],
-                eu: ['Esanahia duten unitateak, jolasteko, agintzeko edo arazoetan sartzeko balio dutenak. Sin.: berbak, terminoak, tranpak.']
-            }
         }
     };
 
@@ -244,8 +232,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             byLabel: 'Egileak',
             jamLabel: 'Honentzat:',
             dictionaryCredit: 'Definizioak hemendik:',
-            dictionarySource: 'Elhuyar',
-            dictionarySourceUrl: 'https://www.euskadi.eus/diccionario-elhuyar/',
+            dictionarySource: 'EEH',
+            dictionarySourceUrl: 'https://www.ehu.eus/eeh/',
             themeLabel: 'Gaia:',
             themeText: 'okerretik okerragora',
             start: 'Jolastu',
@@ -317,6 +305,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Función para obtener definiciones y actualizar la interfaz
     const fetchDefinitions = async (word) => {
+        const renderId = ++definitionRenderId;
         currentWordElement.textContent = word;
         responseOutput.innerHTML = '';
         loadingMessage.style.display = 'block';
@@ -324,6 +313,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         try {
             const data = await getDefinitionData(word);
+            if (renderId !== definitionRenderId) {
+                return false;
+            }
             loadingMessage.style.display = 'none';
 
             if (data.definitions.length === 0) {
@@ -337,9 +329,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             responseOutput.innerHTML = '';
             let index = 0;
             const typeWriter = async () => {
+                if (renderId !== definitionRenderId) {
+                    return;
+                }
+
                 if (index < Math.min(data.definitions.length, MAX_LINES)) {
                     const definitionElement = document.createElement('div');
                     const definitionText = makeLinks ? await linkify(data.definitions[index]) : escapeHtml(data.definitions[index]);
+                    if (renderId !== definitionRenderId) {
+                        return;
+                    }
                     const text = `<strong style="font-family: monospace;">${index + 1}. </strong> ${definitionText}`;
                     definitionElement.innerHTML = text.replace(/(Sin\.|Ant\.)/g, '<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="font-family: Baskervville;">$1<span>');
                     responseOutput.appendChild(definitionElement);
@@ -358,8 +357,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             return true;
 
         } catch (error) {
+            if (renderId !== definitionRenderId) {
+                return false;
+            }
             loadingMessage.style.display = 'none';
-            responseOutput.textContent = `${t('error')}: ${error.message}`;
+            responseOutput.textContent = t('noDefinitions');
             giveUpBtn.disabled = false;
             return false;
         }
@@ -372,25 +374,50 @@ document.addEventListener('DOMContentLoaded', async () => {
             return definitionCache.get(key);
         }
 
-        const localEntry = customDefinitions[word.toLowerCase()];
-        const data = localEntry
-            ? { definitions: localEntry.definitions[language] || [], actions: localEntry.actions }
-            : await fetchDictionaryDefinitions(word);
-
-        definitionCache.set(key, data);
-        if (data.definitions.length === 0) {
-            noDefinitionWords.add(key);
+        if (definitionRequests.has(key)) {
+            return definitionRequests.get(key);
         }
 
-        return data;
+        const request = (async () => {
+            const localEntry = customDefinitions[word.toLowerCase()];
+            const data = normalizeDefinitionData(localEntry
+                ? { definitions: localEntry.definitions[language] || [], actions: localEntry.actions }
+                : await fetchDictionaryDefinitions(word));
+
+            definitionCache.set(key, data);
+            if (data.definitions.length === 0) {
+                noDefinitionWords.add(key);
+            }
+
+            return data;
+        })();
+
+        definitionRequests.set(key, request);
+
+        try {
+            return await request;
+        } finally {
+            definitionRequests.delete(key);
+        }
     };
+
+    const normalizeDefinitionData = (data) => ({
+        definitions: Array.isArray(data?.definitions) ? data.definitions : [],
+        actions: data?.actions,
+    });
 
     const fetchDictionaryDefinitions = async (word) => {
         const endpoint = { es: 'rae', eu: 'eu', en: 'en' }[language];
         const response = await fetch(`${apiBaseUrl}/api/${endpoint}/search/${encodeURIComponent(word)}`);
+
+        if (response.status === 404) {
+            return { definitions: [] };
+        }
+
         if (!response.ok) {
             throw new Error(`Error ${response.status}: ${response.statusText}`);
         }
+
         return response.json();
     };
 
@@ -421,17 +448,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return false;
         }
 
-        if (language !== 'eu') {
-            return true;
-        }
-
-        try {
-            const data = await getDefinitionData(normalized);
-            return data.definitions.length > 0;
-        } catch (error) {
-            noDefinitionWords.add(wordKey(normalized));
-            return false;
-        }
+        return true;
     };
 
     const shouldCheckWord = (word) => {
@@ -481,6 +498,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         return linkedText;
     };
 
+    const unlinkWord = (word) => {
+        const normalized = word.toLowerCase();
+        responseOutput.querySelectorAll('a.ag-tab').forEach(link => {
+            if (link.textContent.toLowerCase() !== normalized) {
+                return;
+            }
+
+            link.replaceWith(document.createTextNode(link.textContent));
+        });
+    };
+
+    const getNextWordLink = (currentLink) => {
+        const links = Array.from(responseOutput.querySelectorAll('a.ag-tab'));
+        const currentIndex = links.indexOf(currentLink);
+
+        if (links.length < 2 || currentIndex === -1) {
+            return null;
+        }
+
+        return links[(currentIndex + 1) % links.length];
+    };
+
     const registerSuccessfulClick = () => {
         clickCount++;
         clicks.innerHTML = t('counter') + ' ' + (clickCount + 1);
@@ -509,9 +548,32 @@ document.addEventListener('DOMContentLoaded', async () => {
                     return;
                 }
 
-                const hasDefinitions = await handleWordClick(clickedWord);
-                if (hasDefinitions) {
-                    registerSuccessfulClick();
+                try {
+                    const data = await getDefinitionData(clickedWord);
+                    if (data.definitions.length === 0) {
+                        const nextLink = getNextWordLink(link);
+                        unlinkWord(clickedWord);
+                        if (nextLink) {
+                            nextLink.click();
+                            return;
+                        }
+                        giveUpBtn.disabled = false;
+                        return;
+                    }
+
+                    const hasDefinitions = await handleWordClick(clickedWord);
+                    if (hasDefinitions) {
+                        registerSuccessfulClick();
+                    }
+                } catch (error) {
+                    const nextLink = getNextWordLink(link);
+                    noDefinitionWords.add(wordKey(clickedWord));
+                    unlinkWord(clickedWord);
+                    if (nextLink) {
+                        nextLink.click();
+                        return;
+                    }
+                    giveUpBtn.disabled = false;
                 }
             });
         });
@@ -617,6 +679,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             applyLanguage();
             updateLanguageSelector();
             updateMuteButton();
+            definitionRenderId++;
             responseOutput.innerHTML = '';
             messageElement.textContent = '';
             currentWordElement.style.display = 'none';

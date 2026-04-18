@@ -34,7 +34,7 @@ export async function onRequestGet({ params }) {
     }
 
     const fetchedWord = await fetchWord(firstResult.id);
-    return json({ definitions: fetchedWord.definitions.map((def) => def.definition) });
+    return json({ definitions: fetchedWord.definitions.map((def) => normalizeRaeDefinition(def.definition)) });
   } catch (error) {
     return json({ error: error.message || String(error) }, 500);
   }
@@ -112,16 +112,26 @@ function extractDefinitions(html) {
           .replace(/<span class="h">.+<\/span>/g, "")
           .replace(/<span class="n_acep">\S+ <\/span>/g, "")
           .replace(/<[^>]+>/g, "")
-          .replace("sing.", "singular")
-          .replace("pl.", "plural")
-          .replace("t.", "también")
-          .replace("p.", "poco")
+          .replace(/\bsing\./g, "singular")
+          .replace(/\bpl\./g, "plural")
+          .replace(/\bp\./g, "poco")
           .trim(),
       ),
     });
   }
 
   return definitions;
+}
+
+function normalizeRaeDefinition(definition) {
+  return definition
+    .replace(/\bAntambién\s*:/g, "Ant.:")
+    .replace(/([.;])(?=(?:Sin|Ant)\.:)/g, "$1 ")
+    .replace(/\b(Sin|Ant)\.:\s*/g, "$1.: ")
+    .replace(/\.\s+\./g, ".")
+    .replace(/\s+([,.;:])/g, "$1")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function decodeHtml(value) {
