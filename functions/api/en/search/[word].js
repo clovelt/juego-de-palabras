@@ -65,10 +65,14 @@ function extractEnglishDefinitions(data) {
 function cleanDefinition(definition) {
   return decodeHtml(
     definition
+      .replace(/<style[\s\S]*?<\/style>/gi, "")
+      .replace(/<script[\s\S]*?<\/script>/gi, "")
       .replace(/<ol[\s\S]*$/i, "")
       .replace(/<ul[\s\S]*$/i, "")
       .replace(/<[^>]+>/g, "")
+      .replace(/\.mw-parser-output\s+\.[^{]+{[^}]+}/g, "")
       .replace(/\s+/g, " ")
+      .replace(/\s+\./g, ".")
       .trim(),
   );
 }
